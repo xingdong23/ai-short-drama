@@ -35,6 +35,18 @@ class PipelineResult:
     completed_steps: list[str]
 
 
+@dataclass(frozen=True)
+class PipelineInspection:
+    output_dir: Path
+    current_step: str
+    completed_steps: list[str]
+    progress_percent: int
+    script_path: Path | None
+    final_video_path: Path | None
+    manifest_path: Path | None
+    artifact_counts: dict[str, int]
+
+
 class PipelineEngine:
     def __init__(self) -> None:
         settings = get_settings()
@@ -57,10 +69,14 @@ class PipelineEngine:
     def resume(self, output_dir: Path) -> PipelineResult:
         return self._execute(output_dir=output_dir, theme=None)
 
+    def inspect(self, output_dir: Path) -> PipelineInspection:
+        return self._build_inspection(output_dir)
+
     def _execute(self, output_dir: Path, theme: str | None) -> PipelineResult:
         self._ensure_layout(output_dir)
         state_path = output_dir / "state.json"
         state = PipelineState.load(state_path)
+        self._write_manifest(output_dir)
 
         script = self._load_existing_script(output_dir)
         if script is None and theme is None:
@@ -73,6 +89,7 @@ class PipelineEngine:
             self._write_script(output_dir, script)
             state.mark_completed("script", "character")
             state.save(state_path)
+            self._write_manifest(output_dir)
 
         if script is None:
             raise RuntimeError("Script must be available before continuing")
@@ -87,6 +104,7 @@ class PipelineEngine:
             self.reference_generator.generate_references(script, references_dir)
             state.mark_completed("character", "video")
             state.save(state_path)
+            self._write_manifest(output_dir)
 
         clip_paths: list[Path] = []
         if "video" not in state.completed:
@@ -105,6 +123,7 @@ class PipelineEngine:
                 )
             state.mark_completed("video", "voice")
             state.save(state_path)
+            self._write_manifest(output_dir)
         else:
             clip_paths = sorted(clips_dir.glob("*.mp4"))
 
@@ -132,6 +151,7 @@ class PipelineEngine:
                     )
             state.mark_completed("voice", "compose")
             state.save(state_path)
+            self._write_manifest(output_dir)
         else:
             synced_paths = sorted(synced_dir.glob("*.mp4"))
 
@@ -147,6 +167,7 @@ class PipelineEngine:
             )
             state.mark_completed("compose", "complete")
             state.save(state_path)
+            self._write_manifest(output_dir)
 
         return PipelineResult(
             output_dir=output_dir,
@@ -178,6 +199,52 @@ class PipelineEngine:
             json.dumps(script.to_dict(), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+    def _build_inspection(self, output_dir: Path) -> PipelineInspection:
+        state = PipelineState.load(output_dir / "state.json")
+        progress_percent = int((len(state.completed) / len(PIPELINE_STEPS)) * 100)
+        script_path = output_dir / "script.json"
+        final_video_path = output_dir / "final.mp4"
+        manifest_path = output_dir / "manifest.json"
+
+        return PipelineInspection(
+            output_dir=output_dir,
+            current_step=state.current_step,
+            completed_steps=list(state.completed),
+            progress_percent=progress_percent,
+            script_path=script_path if script_path.exists() else None,
+            final_video_path=final_video_path if final_video_path.exists() else None,
+            manifest_path=manifest_path if manifest_path.exists() else None,
+            artifact_counts={
+                "references": self._count_files(output_dir / "references"),
+                "clips": self._count_files(output_dir / "clips"),
+                "audio": self._count_files(output_dir / "audio"),
+                "synced": self._count_files(output_dir / "synced"),
+                "compose": self._count_files(output_dir / "compose"),
+            },
+        )
+
+    def _write_manifest(self, output_dir: Path) -> None:
+        inspection = self._build_inspection(output_dir)
+        manifest_path = output_dir / "manifest.json"
+        manifest_payload = {
+            "output_dir": str(inspection.output_dir),
+            "current_step": inspection.current_step,
+            "completed_steps": inspection.completed_steps,
+            "progress_percent": inspection.progress_percent,
+            "script_path": str(inspection.script_path) if inspection.script_path else None,
+            "final_video_path": str(inspection.final_video_path) if inspection.final_video_path else None,
+            "artifact_counts": inspection.artifact_counts,
+        }
+        manifest_path.write_text(
+            json.dumps(manifest_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    def _count_files(self, directory: Path) -> int:
+        if not directory.exists():
+            return 0
+        return sum(1 for path in directory.iterdir() if path.is_file())
 
 
 def build_parser() -> argparse.ArgumentParser:

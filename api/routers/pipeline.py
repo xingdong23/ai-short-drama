@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from api.schemas import (
     APIResponse,
     PipelineResultPayload,
+    PipelineRunStatusPayload,
     PipelineResumeRequest,
     PipelineRunRequest,
     PipelineStatusPayload,
@@ -15,13 +18,28 @@ engine = PipelineEngine()
 
 
 @router.get("/status", response_model=APIResponse[PipelineStatusPayload])
-def status() -> APIResponse[PipelineStatusPayload]:
+def status(output_dir: Path | None = None) -> APIResponse[PipelineStatusPayload]:
+    run = None
+    if output_dir is not None:
+        inspection = engine.inspect(output_dir)
+        run = PipelineRunStatusPayload(
+            output_dir=inspection.output_dir,
+            current_step=inspection.current_step,
+            completed_steps=inspection.completed_steps,
+            progress_percent=inspection.progress_percent,
+            script_path=inspection.script_path,
+            final_video_path=inspection.final_video_path,
+            manifest_path=inspection.manifest_path,
+            artifact_counts=inspection.artifact_counts,
+        )
+
     return APIResponse(
         success=True,
         data=PipelineStatusPayload(
             service="ai-short-drama",
             status="ready",
             steps=PIPELINE_STEPS,
+            run=run,
         ),
     )
 

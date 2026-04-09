@@ -61,6 +61,19 @@
 
 - Added `environment.yml` so the existing GitHub Actions conda workflow has an environment file to consume.
 
+## Delivered Pipeline Observability
+
+- `src/pipeline/engine.py` now exposes `inspect(output_dir)` for filesystem-backed run inspection.
+- Each pipeline run now writes `manifest.json` alongside `state.json`.
+- `GET /api/v1/pipeline/status` now accepts `output_dir` and returns run metadata:
+  - `current_step`
+  - `completed_steps`
+  - `progress_percent`
+  - `script_path`
+  - `final_video_path`
+  - `manifest_path`
+  - `artifact_counts`
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -86,3 +99,12 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 46 source files`
 - `python3 -m src.pipeline.engine --input 'llm fallback smoke' --output ./output/llm-fallback-run` -> `output/llm-fallback-run/final.mp4`
 - `python3` YAML parse check for `environment.yml` -> loaded successfully with `flake8` present
+
+## Observability Verification Evidence
+
+- `pytest -q tests/test_pipeline.py tests/test_api.py` -> `5 passed`
+- `pytest -q` -> `15 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 46 source files`
+- `python3 -m src.pipeline.engine --input 'status manifest smoke' --output ./output/status-manifest-run` -> `output/status-manifest-run/final.mp4`
+- FastAPI TestClient smoke for `/api/v1/pipeline/status?output_dir=...` -> `200`, `manifest_path` exists, `progress_percent` is `100`

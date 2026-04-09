@@ -15,3 +15,6 @@
 - Added a third TDD pass for `scriptwriter`, covering valid LLM JSON, fenced JSON, and failure fallback behavior.
 - Implemented a no-SDK OpenAI-compatible chat-completions client and wired `ScriptwriterEngine` to use it opportunistically.
 - Added `environment.yml` to satisfy the existing conda GitHub Actions workflow.
+- Added a fourth TDD pass for pipeline observability, covering manifest writing, partial-run inspection, and status endpoint enrichment.
+- Implemented `PipelineInspection`, `manifest.json` persistence, and runtime status lookup by `output_dir`.
+- Verified the richer status flow with 15 passing tests plus fresh lint, typecheck, compile, CLI smoke, and API smoke.

@@ -84,10 +84,22 @@ class PipelineResultPayload(BaseModel):
     completed_steps: list[str]
 
 
+class PipelineRunStatusPayload(BaseModel):
+    output_dir: Path
+    current_step: str
+    completed_steps: list[str]
+    progress_percent: int
+    script_path: Path | None
+    final_video_path: Path | None
+    manifest_path: Path | None
+    artifact_counts: dict[str, int]
+
+
 class PipelineStatusPayload(BaseModel):
     service: str
     status: str
     steps: list[str]
+    run: PipelineRunStatusPayload | None = None
 
 
 class ScriptGenerateRequest(BaseModel):
