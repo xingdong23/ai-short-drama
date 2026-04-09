@@ -27,6 +27,7 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | Upgrade Wan video engine into a configurable command adapter | complete | `WanVideoEngine` now supports command-based external backends, placeholder fallback, and config-driven injection from `wan21` model spec |
 | Upgrade Flux reference generation into a configurable command adapter | complete | `FluxReferenceGenerator` now supports command-based external backends, placeholder fallback, and config-driven injection from `flux` model spec |
 | Add repo-local backend wrapper scripts and make them the default path | complete | Default `flux` and `wan21` configs now route through `scripts/run_flux_backend.py` and `scripts/run_wan_backend.py` |
+| Add delegate command support inside repo-local backend wrappers | complete | Wrapper scripts now proxy to externally configured commands via environment variables while preserving deterministic local fallback behavior |
 
 ## Constraints
 
@@ -57,3 +58,4 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | `WanVideoEngine` could not execute an external backend or honor model config | 1 | Added command backend parsing from model extras, subprocess invocation, fallback handling, and pipeline/API wiring |
 | `FluxReferenceGenerator` could not execute an external backend or honor model config | 1 | Added command backend parsing from model extras, subprocess invocation, fallback handling, and pipeline/API wiring |
 | Default model config still bypassed the new adapter layer | 1 | Added repo-local backend wrapper scripts and switched default `flux`/`wan21` configs to command backends using template fields |
+| Repo-local backend wrappers still could not hand off to real external commands | 1 | Added shared delegate-command rendering/execution inside `scripts/`, plus tests for Flux and Wan delegation paths |

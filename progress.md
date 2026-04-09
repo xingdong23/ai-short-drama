@@ -33,3 +33,5 @@
 - Added repo-local wrapper scripts for Flux and Wan so the default config now exercises command backends end to end instead of bypassing them.
 - Switched the default `flux` and `wan21` model configs to template-driven command backends using the current Python executable and repo root.
 - Verified the default wrapper path with 29 passing tests plus fresh lint, typecheck, compile, CLI smoke, and API smoke.
+- Added a ninth TDD pass for wrapper delegation, covering Flux and Wan wrapper handoff to externally configured commands.
+- Added shared wrapper-side command rendering/execution and environment-documented delegate hooks: `AISD_FLUX_DELEGATE_CMD` and `AISD_WAN_DELEGATE_CMD`.

@@ -139,6 +139,19 @@
   - `{mode}` for Wan
 - This means the default pipeline path now exercises the command-adapter execution model end to end while remaining local and deterministic.
 
+## Delivered Wrapper Delegation Layer
+
+- Added [scripts/backend_wrapper_common.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/scripts/backend_wrapper_common.py) to share wrapper-side template field rendering and delegate command execution.
+- `scripts/run_flux_backend.py` now checks `AISD_FLUX_DELEGATE_CMD` before writing its deterministic placeholder output.
+- `scripts/run_wan_backend.py` now checks `AISD_WAN_DELEGATE_CMD` before writing its deterministic placeholder output.
+- Delegate commands are rendered with stable fields:
+  - `{output_path}`
+  - `{python_executable}`
+  - `{project_root}`
+  - Flux: `{character}`
+  - Wan: `{mode}`
+- The wrapper now enforces the contract that a successful delegate command must create the expected artifact path.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -220,3 +233,12 @@
 - FastAPI TestClient smoke:
   - `/api/v1/video/generate` -> `200`, clip contains `backend=wan-wrapper-placeholder`
   - `/api/v1/character/reference` -> `200`, reference contains `generator=flux-wrapper-placeholder`
+
+## Wrapper Delegation Verification Evidence
+
+- `pytest -q tests/test_backend_scripts.py` -> `4 passed`
+- `pytest -q` -> `31 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 56 source files`
+- `python3 -m compileall src api scripts tests` -> success
+- `python3 -m src.pipeline.engine --input 'wrapper delegate smoke' --output ./output/wrapper-delegate-run` -> `output/wrapper-delegate-run/final.mp4`

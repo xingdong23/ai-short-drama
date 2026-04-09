@@ -2,6 +2,9 @@ import argparse
 import os
 from pathlib import Path
 
+from backend_wrapper_common import build_template_fields
+from backend_wrapper_common import run_delegate_command
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Placeholder external backend for Flux reference generation")
@@ -11,6 +14,16 @@ def main() -> int:
 
     output_path = Path(args.output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    delegate_result = run_delegate_command(
+        "AISD_FLUX_DELEGATE_CMD",
+        build_template_fields(
+            output_path,
+            character=args.character,
+        ),
+    )
+    if delegate_result is not None:
+        return delegate_result
+
     output_path.write_text(
         "\n".join(
             [
