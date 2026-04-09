@@ -17,7 +17,7 @@ const responseViewer = document.getElementById("response-viewer");
 const pathMap = document.getElementById("path-map");
 const artifactsGrid = document.getElementById("artifacts-grid");
 const preflightChecks = document.getElementById("preflight-checks");
-const stageStrip = document.getElementById("stage-strip");
+const workflowCards = Array.from(document.querySelectorAll("[data-step-card]"));
 const runStatusPill = document.getElementById("run-status-pill");
 const runProgressLabel = document.getElementById("run-progress-label");
 const progressBar = document.getElementById("progress-bar");
@@ -188,7 +188,7 @@ function writeScript(script) {
 
 function readScript() {
   if (!scriptEditor.value.trim()) {
-    throw new Error("请先生成剧本，或者先载入示例，再执行手动阶段。");
+    throw new Error("请先执行 script 阶段，或者先载入示例剧本。");
   }
   const parsed = JSON.parse(scriptEditor.value);
   state.script = parsed;
@@ -221,7 +221,7 @@ function renderArtifacts() {
   const artifactEntries = Object.entries(state.latestArtifacts);
   if (artifactEntries.length === 0) {
     artifactsGrid.innerHTML =
-      '<div class="artifact-card"><strong>等待中</strong><p>执行任意阶段后，最新产物路径会显示在这里。</p></div>';
+      '<div class="artifact-card"><strong>等待中</strong><code>执行任意阶段后，这里会显示最新产物路径。</code></div>';
     return;
   }
 
@@ -235,30 +235,77 @@ function renderArtifacts() {
     .join("");
 }
 
-function renderStageStrip(run) {
-  const completed = new Set(run?.completed_steps || []);
-  const currentStep = run?.current_step || "idle";
-  const failed = run?.status === "failed";
+function stageArtifactComplete(step) {
+  if (step === "script") {
+    return Boolean(scriptEditor.value.trim());
+  }
+  if (step === "character") {
+    return Array.isArray(state.latestArtifacts.references) && state.latestArtifacts.references.length > 0;
+  }
+  if (step === "video") {
+    return Array.isArray(state.latestArtifacts.clips) && state.latestArtifacts.clips.length > 0;
+  }
+  if (step === "voice") {
+    return Array.isArray(state.latestArtifacts.synced) && state.latestArtifacts.synced.length > 0;
+  }
+  if (step === "compose") {
+    return Boolean(state.latestArtifacts.final_video);
+  }
+  return false;
+}
 
-  stageStrip.innerHTML = stageOrder
-    .map((step) => {
-      let cssClass = "stage-pill";
-      let label = "pending";
-      if (completed.has(step)) {
-        cssClass += " completed";
-        label = "completed";
-      } else if (failed && currentStep === step) {
-        cssClass += " failed";
-        label = "failed";
-      } else if (currentStep === step) {
-        cssClass += " running";
-        label = "running";
-      }
-      return `<div class="${cssClass}"><strong>${escapeHtml(
-        stageLabelMap[step] || step,
-      )}</strong><span>${escapeHtml(stageStateLabelMap[label] || label)}</span></div>`;
-    })
-    .join("");
+function workflowNote(step, status) {
+  if (status === "running") {
+    return "当前阶段正在执行。";
+  }
+  if (status === "failed") {
+    return "这个阶段执行失败了，先看右侧最近错误。";
+  }
+  if (step === "script") {
+    return status === "completed" ? "剧本已准备好，可以继续编辑或进入下一步。" : "先生成剧本，后续四步都依赖它。";
+  }
+  if (step === "character") {
+    return status === "completed" ? "参考图已生成，可以继续进入 video。" : "读取当前剧本，为角色镜头准备参考图。";
+  }
+  if (step === "video") {
+    return status === "completed" ? "片段已生成，可以继续进入 voice。" : "根据镜头类型路由到视频引擎，生成 clips。";
+  }
+  if (step === "voice") {
+    return status === "completed" ? "语音和同步片段已生成，可以继续 compose。" : "读取 clips，生成 audio 与 synced。";
+  }
+  return status === "completed" ? "最终成片已经生成。" : "最后一步，合成字幕、BGM 和 final.mp4。";
+}
+
+function renderWorkflow(run) {
+  const completedFromRun = new Set(run?.completed_steps || []);
+  const currentStep = run?.current_step || null;
+  const isFailedRun = run?.status === "failed";
+  const isRunningRun = run?.status === "running";
+
+  for (const card of workflowCards) {
+    const step = card.dataset.stepCard;
+    const statusElement = card.querySelector("[data-step-status]");
+    const noteElement = card.querySelector("[data-step-note]");
+
+    let status = "pending";
+    if (completedFromRun.has(step) || stageArtifactComplete(step)) {
+      status = "completed";
+    }
+    if (isFailedRun && currentStep === step) {
+      status = "failed";
+    } else if (isRunningRun && currentStep === step) {
+      status = "running";
+    }
+
+    card.classList.remove("pending", "completed", "running", "failed");
+    card.classList.add(status);
+    if (statusElement) {
+      statusElement.textContent = stageStateLabelMap[status] || status;
+    }
+    if (noteElement) {
+      noteElement.textContent = workflowNote(step, status);
+    }
+  }
 }
 
 function renderStatus(run) {
@@ -273,7 +320,7 @@ function renderStatus(run) {
   const metadata = [
     [
       "current_step",
-      run?.current_step ? stageLabelMap[run.current_step] || run.current_step : "空闲",
+      run?.current_step ? `${run.current_step} / ${stageLabelMap[run.current_step] || run.current_step}` : "空闲",
     ],
     ["theme", run?.theme || themeInput.value.trim() || "暂无"],
     ["started_at", run?.started_at || "暂无"],
@@ -281,6 +328,7 @@ function renderStatus(run) {
     ["completed_at", run?.completed_at || "暂无"],
     ["last_error", run?.last_error || "无"],
   ];
+
   statusMetadata.innerHTML = metadata
     .map(
       ([label, value]) =>
@@ -288,14 +336,14 @@ function renderStatus(run) {
     )
     .join("");
 
-  renderStageStrip(run);
+  renderWorkflow(run);
 }
 
 function renderPreflight(report) {
   const entries = Object.entries(report?.checks || {});
   if (entries.length === 0) {
     preflightChecks.innerHTML =
-      '<div class="check-item"><strong>暂无数据</strong><small>点击环境检查后，这里会显示当前运行环境是否就绪。</small></div>';
+      '<div class="check-item"><strong>暂无数据</strong><small>点击“环境检查”后，这里会显示当前运行环境是否就绪。</small></div>';
     return;
   }
 
@@ -356,6 +404,12 @@ function collectArtifactValues(payload) {
   return artifacts;
 }
 
+function updateArtifacts(payload) {
+  Object.assign(state.latestArtifacts, collectArtifactValues(payload));
+  renderArtifacts();
+  renderWorkflow(state.latestRun);
+}
+
 async function refreshStatus() {
   renderPathMap();
   const params = new URLSearchParams({ output_dir: state.paths.outputDir });
@@ -374,7 +428,7 @@ async function runPreflight() {
     headers: {},
   });
   renderPreflight(payload.data);
-  logEvent("环境预检查", payload);
+  logEvent("环境检查", payload);
   return payload;
 }
 
@@ -401,8 +455,7 @@ pipelineForm.addEventListener("submit", async (event) => {
         output_dir: state.paths.outputDir,
       }),
     });
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
+    updateArtifacts(payload.data);
     logEvent("运行完整流水线", payload);
     await refreshStatus();
   });
@@ -417,8 +470,7 @@ resumeButton.addEventListener("click", async () => {
         output_dir: state.paths.outputDir,
       }),
     });
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
+    updateArtifacts(payload.data);
     logEvent("继续执行流水线", payload);
     await refreshStatus();
   });
@@ -447,15 +499,15 @@ generateScriptButton.addEventListener("click", async () => {
       }),
     });
     writeScript(payload.data.script);
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
-    logEvent("生成剧本", payload);
+    updateArtifacts(payload.data);
+    logEvent("执行 script", payload);
   });
 });
 
 formatScriptButton.addEventListener("click", () => {
   try {
     writeScript(readScript());
+    renderWorkflow(state.latestRun);
   } catch (error) {
     logEvent("剧本 JSON 错误", { error: String(error.message || error) });
   }
@@ -463,7 +515,8 @@ formatScriptButton.addEventListener("click", () => {
 
 loadSampleButton.addEventListener("click", () => {
   writeScript(sampleScript(themeInput.value));
-    logEvent("已载入示例剧本", state.script);
+  renderWorkflow(state.latestRun);
+  logEvent("已载入示例剧本", state.script);
 });
 
 characterButton.addEventListener("click", async () => {
@@ -476,9 +529,8 @@ characterButton.addEventListener("click", async () => {
         output_dir: state.paths.referencesDir,
       }),
     });
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
-    logEvent("生成角色参考图", payload);
+    updateArtifacts(payload.data);
+    logEvent("执行 character", payload);
   });
 });
 
@@ -493,9 +545,8 @@ videoButton.addEventListener("click", async () => {
         references_dir: state.paths.referencesDir,
       }),
     });
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
-    logEvent("生成视频片段", payload);
+    updateArtifacts(payload.data);
+    logEvent("执行 video", payload);
   });
 });
 
@@ -510,9 +561,8 @@ voiceButton.addEventListener("click", async () => {
         output_dir: state.paths.outputDir,
       }),
     });
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
-    logEvent("生成语音与口型", payload);
+    updateArtifacts(payload.data);
+    logEvent("执行 voice", payload);
   });
 });
 
@@ -531,25 +581,37 @@ composeButton.addEventListener("click", async () => {
         output_dir: state.paths.outputDir,
       }),
     });
-    Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
-    renderArtifacts();
-    logEvent("执行最终合成", payload);
+    updateArtifacts(payload.data);
+    logEvent("执行 compose", payload);
     await refreshStatus();
   });
 });
 
-outputDirInput.addEventListener("input", renderPathMap);
+function resetRunScopedState() {
+  state.latestArtifacts = {};
+  state.latestRun = null;
+  renderArtifacts();
+  renderStatus(null);
+}
+
+outputDirInput.addEventListener("change", () => {
+  renderPathMap();
+  resetRunScopedState();
+});
+
 themeInput.addEventListener("change", () => {
   if (!scriptEditor.value.trim()) {
     writeScript(sampleScript(themeInput.value));
+    renderWorkflow(state.latestRun);
   }
 });
 
 renderPathMap();
 renderArtifacts();
-  renderPreflight(null);
-  renderStatus(null);
-  writeScript(sampleScript(themeInput.value));
+renderPreflight(null);
+writeScript(sampleScript(themeInput.value));
+renderStatus(null);
+
 runPreflight().catch((error) => {
   logEvent("环境检查失败", { error: String(error.message || error) });
 });

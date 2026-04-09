@@ -16,81 +16,221 @@
     <div class="page-shell">
       <header class="hero panel">
         <div class="hero-copy">
-          <p class="eyebrow">调试界面</p>
-          <h1>AI短剧调试控制台</h1>
+          <p class="eyebrow">调试台</p>
+          <h1>AI短剧工作流调试控制台</h1>
           <p class="hero-text">
-            在一个页面里跑完整流水线、逐阶段调试、查看运行状态，并随时编辑当前剧本
-            JSON，方便把整条链路串起来。
+            这个页面只做一件事：把 <code>script → character → video → voice → compose</code>
+            这五个阶段清楚地摆出来，让你能一眼看懂流程、逐步调试、也能一键跑全链路。
           </p>
         </div>
         <div class="hero-badges">
-          <span class="badge">全流程运行</span>
-          <span class="badge">阶段串联</span>
-          <span class="badge">状态与环境检查</span>
+          <span class="badge">设置先行</span>
+          <span class="badge">五段流程可见</span>
+          <span class="badge">调试路径可追踪</span>
         </div>
       </header>
 
-      <main class="workspace">
-        <section class="panel controls-panel">
-          <div class="section-heading">
-            <p class="eyebrow">控制面板</p>
-            <h2>工作区</h2>
+      <section class="panel setup-panel">
+        <div class="setup-grid">
+          <div class="setup-column">
+            <div class="section-heading">
+              <p class="eyebrow">运行设置</p>
+              <h2>顶部先填这些</h2>
+            </div>
+
+            <form id="pipeline-form" class="control-form">
+              <label class="field">
+                <span class="field-label">主题</span>
+                <input
+                  id="theme-input"
+                  name="theme"
+                  type="text"
+                  value="霓虹雨夜里的办公室复仇"
+                  autocomplete="off"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field-label">输出目录</span>
+                <input
+                  id="output-dir-input"
+                  name="output_dir"
+                  type="text"
+                  value="./output/debug-console-run"
+                  autocomplete="off"
+                />
+              </label>
+
+              <div class="button-row">
+                <button id="run-pipeline-button" class="action-button action-primary" type="submit">
+                  一键跑完整流水线
+                </button>
+                <button id="resume-button" class="action-button" type="button">继续执行</button>
+                <button id="status-button" class="action-button" type="button">刷新状态</button>
+                <button id="preflight-button" class="action-button" type="button">环境检查</button>
+              </div>
+            </form>
           </div>
 
-          <form id="pipeline-form" class="control-form">
-            <label class="field">
-              <span class="field-label">主题</span>
-              <input
-                id="theme-input"
-                name="theme"
-                type="text"
-                value="霓虹雨夜里的办公室复仇"
-                autocomplete="off"
-              />
-            </label>
-
-            <label class="field">
-              <span class="field-label">输出目录</span>
-              <input
-                id="output-dir-input"
-                name="output_dir"
-                type="text"
-                value="./output/debug-console-run"
-                autocomplete="off"
-              />
-            </label>
-
-            <div class="button-row">
-              <button id="run-pipeline-button" class="action-button action-primary" type="submit">
-                运行完整流水线
-              </button>
-              <button id="resume-button" class="action-button" type="button">继续执行</button>
-              <button id="status-button" class="action-button" type="button">刷新状态</button>
-              <button id="preflight-button" class="action-button" type="button">环境检查</button>
-            </div>
-          </form>
-
-          <div class="path-summary">
+          <aside class="guide-card">
             <div class="section-heading compact">
-              <p class="eyebrow">派生目录</p>
-              <h3>运行目录</h3>
+              <p class="eyebrow">怎么使用</p>
+              <h3>推荐顺序</h3>
             </div>
-            <div id="path-map" class="path-grid"></div>
+
+            <ol class="guide-list">
+              <li>先填“主题”和“输出目录”。</li>
+              <li>如果想一键跑，直接点“运行完整流水线”。</li>
+              <li>如果想分步调，先点 <code>script</code>，再按顺序往后走。</li>
+              <li>剧本生成后，可以在下方直接编辑 JSON，再继续后面的阶段。</li>
+              <li>右侧会持续显示当前状态、环境检查、目录和最新产物。</li>
+            </ol>
+
+            <div class="guide-hint">
+              <strong>两种模式</strong>
+              <p>全流程模式适合快速验证；手动分步模式适合定位问题和单独调试阶段。</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel workflow-panel">
+        <div class="workflow-header">
+          <div class="section-heading compact">
+            <p class="eyebrow">主流程</p>
+            <h2>你现在跑的是这 5 步</h2>
           </div>
+          <p class="workflow-summary">
+            每张卡片都同时显示阶段代号、作用、输入输出和当前状态。用户不用猜顺序。
+          </p>
+        </div>
 
-          <div class="stage-strip" id="stage-strip"></div>
-        </section>
+        <div class="workflow-grid">
+          <article class="workflow-card" data-step-card="script">
+            <div class="workflow-card-top">
+              <span class="step-code">script</span>
+              <span class="step-status" data-step-status="script">等待中</span>
+            </div>
+            <h3>剧本生成</h3>
+            <p class="workflow-text">根据主题生成剧本 JSON，或者先生成后手动编辑。</p>
+            <dl class="workflow-io">
+              <div>
+                <dt>输入</dt>
+                <dd>主题</dd>
+              </div>
+              <div>
+                <dt>输出</dt>
+                <dd><code>script.json</code></dd>
+              </div>
+            </dl>
+            <p class="workflow-note" data-step-note="script">先从这里开始。</p>
+            <button id="generate-script-button" class="action-button action-primary" type="button">
+              执行 script
+            </button>
+          </article>
 
+          <article class="workflow-card" data-step-card="character">
+            <div class="workflow-card-top">
+              <span class="step-code">character</span>
+              <span class="step-status" data-step-status="character">等待中</span>
+            </div>
+            <h3>角色参考图</h3>
+            <p class="workflow-text">读取当前剧本，为角色镜头生成参考图。</p>
+            <dl class="workflow-io">
+              <div>
+                <dt>输入</dt>
+                <dd>剧本 JSON</dd>
+              </div>
+              <div>
+                <dt>输出</dt>
+                <dd><code>references/</code></dd>
+              </div>
+            </dl>
+            <p class="workflow-note" data-step-note="character">需要先有剧本。</p>
+            <button id="character-button" class="action-button action-primary" type="button">
+              执行 character
+            </button>
+          </article>
+
+          <article class="workflow-card" data-step-card="video">
+            <div class="workflow-card-top">
+              <span class="step-code">video</span>
+              <span class="step-status" data-step-status="video">等待中</span>
+            </div>
+            <h3>视频片段</h3>
+            <p class="workflow-text">按镜头类型路由到视频引擎，生成片段。</p>
+            <dl class="workflow-io">
+              <div>
+                <dt>输入</dt>
+                <dd>剧本 + 参考图</dd>
+              </div>
+              <div>
+                <dt>输出</dt>
+                <dd><code>clips/</code></dd>
+              </div>
+            </dl>
+            <p class="workflow-note" data-step-note="video">通常依赖参考图阶段。</p>
+            <button id="video-button" class="action-button action-primary" type="button">
+              执行 video
+            </button>
+          </article>
+
+          <article class="workflow-card" data-step-card="voice">
+            <div class="workflow-card-top">
+              <span class="step-code">voice</span>
+              <span class="step-status" data-step-status="voice">等待中</span>
+            </div>
+            <h3>配音与口型</h3>
+            <p class="workflow-text">生成配音音频，并把音频与片段做口型同步。</p>
+            <dl class="workflow-io">
+              <div>
+                <dt>输入</dt>
+                <dd>剧本 + 片段</dd>
+              </div>
+              <div>
+                <dt>输出</dt>
+                <dd><code>audio/</code> + <code>synced/</code></dd>
+              </div>
+            </dl>
+            <p class="workflow-note" data-step-note="voice">需要先有 clips。</p>
+            <button id="voice-button" class="action-button action-primary" type="button">
+              执行 voice
+            </button>
+          </article>
+
+          <article class="workflow-card" data-step-card="compose">
+            <div class="workflow-card-top">
+              <span class="step-code">compose</span>
+              <span class="step-status" data-step-status="compose">等待中</span>
+            </div>
+            <h3>最终合成</h3>
+            <p class="workflow-text">合成字幕、BGM 与最终视频，产出成片。</p>
+            <dl class="workflow-io">
+              <div>
+                <dt>输入</dt>
+                <dd>synced 或 clips</dd>
+              </div>
+              <div>
+                <dt>输出</dt>
+                <dd><code>final.mp4</code></dd>
+              </div>
+            </dl>
+            <p class="workflow-note" data-step-note="compose">最后一步。</p>
+            <button id="compose-button" class="action-button action-primary" type="button">
+              执行 compose
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <main class="workspace">
         <section class="panel script-panel">
           <div class="section-heading">
-            <p class="eyebrow">可编辑载荷</p>
-            <h2>剧本工作台</h2>
+            <p class="eyebrow">剧本编辑</p>
+            <h2>当前 script 工作区</h2>
           </div>
 
           <div class="button-row tight">
-            <button id="generate-script-button" class="action-button action-primary" type="button">
-              生成剧本
-            </button>
             <button id="format-script-button" class="action-button" type="button">格式化 JSON</button>
             <button id="load-sample-button" class="action-button" type="button">载入示例</button>
           </div>
@@ -103,8 +243,8 @@
 
         <section class="panel monitor-panel">
           <div class="section-heading">
-            <p class="eyebrow">可观测性</p>
-            <h2>运行监视器</h2>
+            <p class="eyebrow">运行总览</p>
+            <h2>状态与环境</h2>
           </div>
 
           <div class="status-block">
@@ -118,74 +258,42 @@
             <dl id="status-metadata" class="metadata-grid"></dl>
           </div>
 
-            <div class="preflight-block">
-              <div class="section-heading compact">
-              <p class="eyebrow">环境</p>
-              <h3>预检查</h3>
-              </div>
-              <div id="preflight-checks" class="check-list"></div>
-            </div>
-
-          <div class="response-block">
+          <div class="preflight-block">
             <div class="section-heading compact">
-              <p class="eyebrow">响应日志</p>
-              <h3>最新事件</h3>
+              <p class="eyebrow">环境检查</p>
+              <h3>当前运行条件</h3>
             </div>
-            <pre id="response-viewer" class="response-viewer">暂时还没有事件。</pre>
+            <div id="preflight-checks" class="check-list"></div>
           </div>
         </section>
       </main>
 
-      <section class="panel stages-panel">
-        <div class="section-heading">
-          <p class="eyebrow">阶段串联</p>
-          <h2>手动流程</h2>
+      <section class="panel diagnostics-panel">
+        <div class="diagnostics-grid">
+          <div class="diagnostic-card">
+            <div class="section-heading compact">
+              <p class="eyebrow">运行目录</p>
+              <h3>当前路径映射</h3>
+            </div>
+            <div id="path-map" class="path-grid"></div>
+          </div>
+
+          <div class="diagnostic-card">
+            <div class="section-heading compact">
+              <p class="eyebrow">最新产物</p>
+              <h3>阶段输出</h3>
+            </div>
+            <div id="artifacts-grid" class="artifact-grid"></div>
+          </div>
+
+          <div class="diagnostic-card log-card">
+            <div class="section-heading compact">
+              <p class="eyebrow">响应日志</p>
+              <h3>最近一次返回</h3>
+            </div>
+            <pre id="response-viewer" class="response-viewer">暂时还没有事件。</pre>
+          </div>
         </div>
-        <div class="stage-grid">
-          <article class="stage-card">
-            <p class="stage-index">01</p>
-            <h3>角色参考图</h3>
-            <p>把参考图产物写入当前运行目录下的 <code>references/</code>。</p>
-            <button id="character-button" class="action-button action-primary" type="button">
-              生成参考图
-            </button>
-          </article>
-
-          <article class="stage-card">
-            <p class="stage-index">02</p>
-            <h3>视频片段</h3>
-            <p>对镜头做路由并在当前运行目录下的 <code>clips/</code> 生成片段。</p>
-            <button id="video-button" class="action-button action-primary" type="button">
-              生成片段
-            </button>
-          </article>
-
-          <article class="stage-card">
-            <p class="stage-index">03</p>
-            <h3>配音与口型</h3>
-            <p>在 <code>audio/</code> 生成音频，并在 <code>synced/</code> 生成同步片段。</p>
-            <button id="voice-button" class="action-button action-primary" type="button">
-              生成语音
-            </button>
-          </article>
-
-          <article class="stage-card">
-            <p class="stage-index">04</p>
-            <h3>最终合成</h3>
-            <p>基于当前最新的片段目录，生成字幕、BGM 和最终成片。</p>
-            <button id="compose-button" class="action-button action-primary" type="button">
-              执行合成
-            </button>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel artifacts-panel">
-        <div class="section-heading">
-          <p class="eyebrow">产物</p>
-          <h2>最新路径</h2>
-        </div>
-        <div id="artifacts-grid" class="artifact-grid"></div>
       </section>
     </div>
 
