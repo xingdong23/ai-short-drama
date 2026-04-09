@@ -38,6 +38,11 @@ def test_pipeline_run_creates_expected_artifacts(tmp_path: Path) -> None:
     assert manifest["final_video_path"] == str(output_dir / "final.mp4")
     assert manifest["artifact_counts"]["clips"] >= 1
 
+    reference_text = (output_dir / "references" / "shot_002.txt").read_text(encoding="utf-8")
+    clip_text = (output_dir / "clips" / "shot_002.mp4").read_text(encoding="utf-8")
+    assert "generator=flux-wrapper-placeholder" in reference_text
+    assert "backend=wan-wrapper-placeholder" in clip_text
+
 
 def test_pipeline_resume_finishes_remaining_steps(tmp_path: Path) -> None:
     output_dir = tmp_path / "resume_case"

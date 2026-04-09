@@ -71,6 +71,9 @@ def test_character_reference_endpoint_generates_reference_files(tmp_path: Path) 
     for path in payload["data"]["reference_paths"].values():
         assert Path(path).exists()
 
+    reference_text = Path(payload["data"]["reference_paths"]["shot_001"]).read_text(encoding="utf-8")
+    assert "generator=flux-wrapper-placeholder" in reference_text
+
 
 def test_character_train_endpoint_generates_weights_file(tmp_path: Path) -> None:
     response = client.post(
@@ -110,6 +113,9 @@ def test_video_generate_endpoint_creates_clip_files(tmp_path: Path) -> None:
 
     for path in payload["data"]["clip_paths"].values():
         assert Path(path).exists()
+
+    wan_clip_text = Path(payload["data"]["clip_paths"]["shot_001"]).read_text(encoding="utf-8")
+    assert "backend=wan-wrapper-placeholder" in wan_clip_text
 
 
 def test_voice_synthesize_endpoint_creates_audio_and_synced_files(tmp_path: Path) -> None:

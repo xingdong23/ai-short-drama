@@ -127,6 +127,18 @@
 - `src/pipeline/engine.py` and `api/routers/character.py` now construct `FluxReferenceGenerator` from the `flux` registry spec.
 - `config/models.yaml` now makes the placeholder backend explicit for `flux`.
 
+## Delivered Repo-Local Backend Wrappers
+
+- Added [scripts/run_flux_backend.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/scripts/run_flux_backend.py) as a deterministic placeholder external backend for Flux.
+- Added [scripts/run_wan_backend.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/scripts/run_wan_backend.py) as a deterministic placeholder external backend for Wan.
+- Default `flux` and `wan21` registry entries now use `backend.type=command` with template-based argv:
+  - `{python_executable}`
+  - `{project_root}`
+  - `{output_path}`
+  - `{character}` for Flux
+  - `{mode}` for Wan
+- This means the default pipeline path now exercises the command-adapter execution model end to end while remaining local and deterministic.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -197,3 +209,14 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 52 source files`
 - `python3 -m src.pipeline.engine --input 'flux adapter smoke' --output ./output/flux-adapter-run` -> `output/flux-adapter-run/final.mp4`
 - FastAPI TestClient smoke for `/api/v1/character/reference` -> `200`, generated reference contains `generator=flux-placeholder` under default config
+
+## Default Wrapper Verification Evidence
+
+- `pytest -q tests/test_backend_scripts.py tests/test_stage_api.py::test_character_reference_endpoint_generates_reference_files tests/test_stage_api.py::test_video_generate_endpoint_creates_clip_files tests/test_pipeline.py::test_pipeline_run_creates_expected_artifacts` -> `5 passed`
+- `pytest -q` -> `29 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 55 source files`
+- `python3 -m src.pipeline.engine --input 'wrapper default smoke' --output ./output/wrapper-default-run` -> `output/wrapper-default-run/final.mp4`
+- FastAPI TestClient smoke:
+  - `/api/v1/video/generate` -> `200`, clip contains `backend=wan-wrapper-placeholder`
+  - `/api/v1/character/reference` -> `200`, reference contains `generator=flux-wrapper-placeholder`

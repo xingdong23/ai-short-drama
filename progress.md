@@ -30,3 +30,6 @@
 - Added an eighth TDD pass for the Flux adapter layer, covering command backend execution, fallback-on-failure, and hard failure without fallback.
 - Upgraded `FluxReferenceGenerator` from a pure placeholder writer into a config-driven subprocess adapter while preserving deterministic local fallback behavior.
 - Rewired pipeline and character API construction so `flux` behavior now comes from model registry config.
+- Added repo-local wrapper scripts for Flux and Wan so the default config now exercises command backends end to end instead of bypassing them.
+- Switched the default `flux` and `wan21` model configs to template-driven command backends using the current Python executable and repo root.
+- Verified the default wrapper path with 29 passing tests plus fresh lint, typecheck, compile, CLI smoke, and API smoke.

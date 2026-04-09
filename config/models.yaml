@@ -5,7 +5,12 @@ models:
     vram_mb: 12000
     lora_support: true
     backend:
-      type: "placeholder"
+      type: "command"
+      argv:
+        - "{python_executable}"
+        - "{project_root}/scripts/run_flux_backend.py"
+        - "{output_path}"
+        - "{character}"
       fallback_to_placeholder: true
 
   skyreels_13b:
@@ -25,7 +30,12 @@ models:
     vram_mb: 20000
     t2v_model: "Wan-AI/Wan2.1-T2V-14B-480P"
     backend:
-      type: "placeholder"
+      type: "command"
+      argv:
+        - "{python_executable}"
+        - "{project_root}/scripts/run_wan_backend.py"
+        - "{output_path}"
+        - "{mode}"
       fallback_to_placeholder: true
 
   cosyvoice:

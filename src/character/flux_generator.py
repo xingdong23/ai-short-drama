@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -150,6 +151,7 @@ class FluxReferenceGenerator:
 
     def _template_fields(self, shot: Shot, output_path: Path) -> dict[str, str]:
         model_id = self.model_spec.model_id if self.model_spec is not None else "flux-placeholder"
+        project_root = Path(__file__).resolve().parents[2]
         return {
             "output_path": str(output_path),
             "prompt": shot.prompt,
@@ -158,4 +160,6 @@ class FluxReferenceGenerator:
             "shot_id": shot.id,
             "duration": str(shot.duration),
             "camera": shot.camera,
+            "python_executable": sys.executable,
+            "project_root": str(project_root),
         }

@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -159,6 +160,7 @@ class WanVideoEngine:
         reference_path: Path | None,
     ) -> dict[str, str]:
         model_id = self.model_spec.model_id if self.model_spec is not None else "wan21-placeholder"
+        project_root = Path(__file__).resolve().parents[2]
         return {
             "output_path": str(output_path),
             "mode": mode,
@@ -168,4 +170,6 @@ class WanVideoEngine:
             "shot_id": shot.id,
             "duration": str(shot.duration),
             "camera": shot.camera,
+            "python_executable": sys.executable,
+            "project_root": str(project_root),
         }
