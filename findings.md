@@ -178,6 +178,20 @@
   - `{audio_path}`
 - This keeps the wrapper contract uniform across `Flux`, `Wan`, `CosyVoice`, and `MuseTalk`.
 
+## Delivered Frontend Debug Console
+
+- Added a FastAPI-served debug console entrypoint at `/debug`.
+- Added [index.html](/Users/chengzheng/workspace/chuangxin/ai-short-drama/api/debug_ui/index.html), [app.css](/Users/chengzheng/workspace/chuangxin/ai-short-drama/api/debug_ui/assets/app.css), and [app.js](/Users/chengzheng/workspace/chuangxin/ai-short-drama/api/debug_ui/assets/app.js).
+- The UI provides:
+  - full pipeline run and resume controls
+  - stage-by-stage buttons for script, character, video, voice, and compose
+  - an editable `script` JSON workbench
+  - derived output directory mapping for `references`, `clips`, `audio`, `synced`, and `compose`
+  - pipeline status timeline and progress
+  - preflight check rendering
+  - response/event log and latest artifact path cards
+- The debug console is same-origin with the API, so it talks directly to the existing FastAPI routes without adding new dependencies or a separate frontend build toolchain.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -286,3 +300,18 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 59 source files`
 - `python3 -m compileall src api scripts tests` -> success
 - `python3 -m src.pipeline.engine --input 'voice wrapper delegate smoke' --output ./output/voice-wrapper-delegate-run` -> `output/voice-wrapper-delegate-run/final.mp4`
+
+## Debug Console Verification Evidence
+
+- `pytest -q tests/test_debug_ui.py tests/test_api.py` -> `5 passed`
+- `pytest -q` -> `41 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 60 source files`
+- `python3 -m compileall src api scripts tests` -> success
+- `python3 -m src.pipeline.engine --input 'debug console smoke' --output ./output/debug-console-smoke` -> `output/debug-console-smoke/final.mp4`
+- Uvicorn smoke:
+  - `GET /debug` -> `200`
+  - `HEAD /debug/assets/app.js` -> `200`
+- Playwright screenshot smoke with Chromium:
+  - desktop viewport `1440x1600` -> `/tmp/ai-short-drama-debug-desktop.png`
+  - narrow viewport `390x1200` -> `/tmp/ai-short-drama-debug-mobile.png`

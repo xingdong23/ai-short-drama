@@ -39,3 +39,6 @@
 - Upgraded the default voice path so TTS and lip sync now flow through registry-driven command adapters and repo-local wrapper scripts instead of direct placeholder writers.
 - Added an eleventh TDD pass for voice-wrapper delegation, covering `AISD_COSYVOICE_DELEGATE_CMD` and `AISD_MUSETALK_DELEGATE_CMD`.
 - Extended the shared wrapper templating contract so all four repo-local wrappers can proxy to real external commands through the same mechanism.
+- Added a twelfth TDD pass for a browser-facing debug surface, covering the `/debug` HTML entrypoint and mounted JavaScript asset route.
+- Implemented a single-page debug console in FastAPI so we can run the whole pipeline, chain stages manually, edit script JSON, inspect preflight, and watch status/artifacts without leaving the repo.
+- Verified the debug console in a real Uvicorn process and captured desktop + narrow-screen Chromium screenshots to confirm the responsive layout loads cleanly.
