@@ -9,3 +9,6 @@
 - Implemented the Phase 1 scaffold: config files, project structure, placeholder engines, stateful pipeline CLI, FastAPI routes, and helper scripts.
 - Ran setup, fixed a package import warning for `python -m`, and resolved lint/type issues.
 - Final verification passed across pytest, ruff, mypy, compileall, CLI smoke, and API smoke.
+- Added a second TDD pass for stage-level APIs and wrote failing tests for script, character, video, voice, and compose endpoints.
+- Replaced placeholder stage responses with concrete request/response schemas and deterministic artifact generation.
+- Verified the expanded API surface with 11 passing tests plus fresh lint and type checks.

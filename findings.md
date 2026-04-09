@@ -39,6 +39,15 @@
 - Placeholder modules for script generation, reference generation, video generation, TTS, lip sync, subtitle generation, and composition
 - Tests covering registry loading, pipeline run, pipeline resume, and API status/run
 
+## Delivered Stage APIs
+
+- `POST /api/v1/script/generate` now generates and optionally persists `script.json`
+- `POST /api/v1/character/reference` now creates reference artifacts from a supplied script
+- `POST /api/v1/character/train` now creates placeholder LoRA weight files
+- `POST /api/v1/video/generate` now creates clip artifacts with shot routing
+- `POST /api/v1/voice/synthesize` now creates audio and lip-synced clip artifacts
+- `POST /api/v1/compose/final` now creates subtitle, BGM, and final composition artifacts
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -49,3 +58,9 @@
 - FastAPI smoke:
   - `POST /api/v1/pipeline/run` -> `200`
   - `GET /api/v1/pipeline/status` -> `200`
+
+## Additional Verification Evidence
+
+- `pytest -q tests/test_stage_api.py` -> `6 passed`
+- `pytest -q` -> `11 passed`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 44 source files`

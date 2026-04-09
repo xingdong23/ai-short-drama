@@ -18,6 +18,7 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | Define minimum runnable behavior with tests | complete | Added model registry, pipeline, resume, and API smoke coverage |
 | Implement scaffold and placeholder engines | complete | Added Python project layout, config, CLI pipeline, FastAPI app, and placeholder engines |
 | Verify with tests and smoke commands | complete | pytest, ruff, mypy, compileall, CLI run, and API smoke all passed |
+| Upgrade stage APIs from placeholders to executable endpoints | complete | `script`, `character`, `video`, `voice`, and `compose` now generate deterministic artifacts and return real paths |
 
 ## Constraints
 
@@ -39,3 +40,5 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | Missing source tree caused import failures in pytest | 1 | Added scaffolded packages and modules to satisfy test targets |
 | `python -m src.pipeline.engine` emitted `runpy` warning | 1 | Removed eager import from `src/pipeline/__init__.py` |
 | `ruff` flagged redundant f-string and `mypy` flagged `Path | None` handling | 1 | Simplified string literal and made reference path narrowing explicit |
+| New stage API tests failed because route payloads were still placeholders | 1 | Added concrete request/response schemas and wired routes to the existing placeholder engines |
+| `mypy` rejected API schema conversions around `ShotPayload` | 1 | Tightened `ShotPayload.type` to `ShotType` and replaced `**dict` construction with explicit field mapping |
