@@ -1,13 +1,17 @@
 from api.schemas import APIResponse, VoiceSynthesizePayload, VoiceSynthesizeRequest
 from fastapi import APIRouter
 
+from src.config import get_settings
+from src.models.registry import ModelRegistry
 from src.voice.cosyvoice_engine import CosyVoiceEngine
 from src.voice.musetalk_engine import MuseTalkEngine
 
 
 router = APIRouter(prefix="/voice", tags=["voice"])
-tts_engine = CosyVoiceEngine()
-lip_sync_engine = MuseTalkEngine()
+settings = get_settings()
+registry = ModelRegistry.from_yaml(settings.config_dir / "models.yaml")
+tts_engine = CosyVoiceEngine(registry.get("cosyvoice"))
+lip_sync_engine = MuseTalkEngine(registry.get("musetalk"))
 
 
 @router.post("/synthesize", response_model=APIResponse[VoiceSynthesizePayload])

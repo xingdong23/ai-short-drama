@@ -28,6 +28,8 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | Upgrade Flux reference generation into a configurable command adapter | complete | `FluxReferenceGenerator` now supports command-based external backends, placeholder fallback, and config-driven injection from `flux` model spec |
 | Add repo-local backend wrapper scripts and make them the default path | complete | Default `flux` and `wan21` configs now route through `scripts/run_flux_backend.py` and `scripts/run_wan_backend.py` |
 | Add delegate command support inside repo-local backend wrappers | complete | Wrapper scripts now proxy to externally configured commands via environment variables while preserving deterministic local fallback behavior |
+| Upgrade voice synthesis and lip sync into configurable command adapters | complete | `CosyVoiceEngine` and `MuseTalkEngine` now support command backends, placeholder fallback, and config-driven injection from `cosyvoice` and `musetalk` model specs |
+| Add repo-local voice backend wrapper scripts and make them the default path | complete | Default `cosyvoice` and `musetalk` configs now route through `scripts/run_cosyvoice_backend.py` and `scripts/run_musetalk_backend.py` |
 
 ## Constraints
 
@@ -59,3 +61,4 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | `FluxReferenceGenerator` could not execute an external backend or honor model config | 1 | Added command backend parsing from model extras, subprocess invocation, fallback handling, and pipeline/API wiring |
 | Default model config still bypassed the new adapter layer | 1 | Added repo-local backend wrapper scripts and switched default `flux`/`wan21` configs to command backends using template fields |
 | Repo-local backend wrappers still could not hand off to real external commands | 1 | Added shared delegate-command rendering/execution inside `scripts/`, plus tests for Flux and Wan delegation paths |
+| Voice synthesis and lip-sync stages still bypassed the command adapter architecture | 1 | Added command backend parsing, subprocess execution, fallback handling, wrapper scripts, and registry-based wiring for `cosyvoice` and `musetalk` |

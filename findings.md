@@ -152,6 +152,20 @@
   - Wan: `{mode}`
 - The wrapper now enforces the contract that a successful delegate command must create the expected artifact path.
 
+## Delivered Voice Adapter And Wrapper Layers
+
+- `src/voice/cosyvoice_engine.py` now accepts an optional `ModelSpec` and supports `backend.type=command` for TTS execution.
+- `src/voice/musetalk_engine.py` now accepts an optional `ModelSpec` and supports `backend.type=command` for lip-sync execution.
+- Both engines now:
+  - render argv from template fields
+  - inject stage context through environment variables
+  - require successful commands to create the expected output path
+  - fall back to deterministic placeholder artifacts when configured to do so
+- Added [scripts/run_cosyvoice_backend.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/scripts/run_cosyvoice_backend.py) as the default repo-local wrapper for TTS.
+- Added [scripts/run_musetalk_backend.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/scripts/run_musetalk_backend.py) as the default repo-local wrapper for lip sync.
+- `config/models.yaml` now routes default `cosyvoice` and `musetalk` entries through those wrapper scripts.
+- `src/pipeline/engine.py` and [api/routers/voice.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/api/routers/voice.py) now construct both voice engines from the model registry, so the default pipeline path exercises the command-adapter model end to end.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -242,3 +256,12 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 56 source files`
 - `python3 -m compileall src api scripts tests` -> success
 - `python3 -m src.pipeline.engine --input 'wrapper delegate smoke' --output ./output/wrapper-delegate-run` -> `output/wrapper-delegate-run/final.mp4`
+
+## Voice Adapter Verification Evidence
+
+- `pytest -q tests/test_voice_engines.py tests/test_backend_scripts.py tests/test_stage_api.py::test_voice_synthesize_endpoint_creates_audio_and_synced_files` -> `11 passed`
+- `pytest -q` -> `37 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 59 source files`
+- `python3 -m compileall src api scripts tests` -> success
+- `python3 -m src.pipeline.engine --input 'voice adapter smoke' --output ./output/voice-adapter-run` -> `output/voice-adapter-run/final.mp4`

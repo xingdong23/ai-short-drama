@@ -140,6 +140,10 @@ def test_voice_synthesize_endpoint_creates_audio_and_synced_files(tmp_path: Path
     assert Path(payload["data"]["synced_paths"]["shot_002"]).exists()
     assert Path(payload["data"]["audio_paths"]["shot_001"]).exists()
     assert "shot_002" not in payload["data"]["audio_paths"]
+    audio_text = Path(payload["data"]["audio_paths"]["shot_001"]).read_text(encoding="utf-8")
+    synced_text = Path(payload["data"]["synced_paths"]["shot_001"]).read_text(encoding="utf-8")
+    assert "backend=cosyvoice-wrapper-placeholder" in audio_text
+    assert "backend=musetalk-wrapper-placeholder" in synced_text
 
 
 def test_compose_final_endpoint_creates_final_video_and_subtitles(tmp_path: Path) -> None:

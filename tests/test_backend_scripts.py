@@ -156,3 +156,61 @@ def test_wan_backend_script_can_delegate_to_external_command(tmp_path: Path) -> 
     payload = output_path.read_text(encoding="utf-8")
     assert "backend=wan-delegate" in payload
     assert "mode=i2v" in payload
+
+
+def test_cosyvoice_backend_script_writes_audio_artifact(tmp_path: Path) -> None:
+    output_path = tmp_path / "cosyvoice_audio.wav"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AISD_SHOT_ID": "shot_001",
+            "AISD_SHOT_DIALOGUE": "We can still fix this.",
+            "AISD_CHARACTER": "xiaomei",
+            "AISD_MODEL_ID": "cosyvoice-model",
+        }
+    )
+
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/run_cosyvoice_backend.py",
+            str(output_path),
+        ],
+        check=True,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    payload = output_path.read_text(encoding="utf-8")
+    assert "backend=cosyvoice-wrapper-placeholder" in payload
+    assert "dialogue=We can still fix this." in payload
+
+
+def test_musetalk_backend_script_writes_synced_artifact(tmp_path: Path) -> None:
+    output_path = tmp_path / "musetalk_synced.mp4"
+    env = os.environ.copy()
+    env.update(
+        {
+            "AISD_SHOT_ID": "shot_001",
+            "AISD_SOURCE_CLIP_PATH": "/tmp/source.mp4",
+            "AISD_AUDIO_PATH": "/tmp/source.wav",
+            "AISD_MODEL_ID": "musetalk-model",
+        }
+    )
+
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/run_musetalk_backend.py",
+            str(output_path),
+        ],
+        check=True,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    payload = output_path.read_text(encoding="utf-8")
+    assert "backend=musetalk-wrapper-placeholder" in payload
+    assert "audio_path=/tmp/source.wav" in payload

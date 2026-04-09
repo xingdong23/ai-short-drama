@@ -35,3 +35,5 @@
 - Verified the default wrapper path with 29 passing tests plus fresh lint, typecheck, compile, CLI smoke, and API smoke.
 - Added a ninth TDD pass for wrapper delegation, covering Flux and Wan wrapper handoff to externally configured commands.
 - Added shared wrapper-side command rendering/execution and environment-documented delegate hooks: `AISD_FLUX_DELEGATE_CMD` and `AISD_WAN_DELEGATE_CMD`.
+- Added a tenth TDD pass for the voice chain, covering command backend execution for `CosyVoice` and `MuseTalk`, repo-local voice wrappers, and voice stage API output markers.
+- Upgraded the default voice path so TTS and lip sync now flow through registry-driven command adapters and repo-local wrapper scripts instead of direct placeholder writers.

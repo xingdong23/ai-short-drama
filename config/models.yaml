@@ -42,11 +42,25 @@ models:
     type: tts
     model_id: "FunAudioLLM/CosyVoice2-0.5B"
     vram_mb: 2000
+    backend:
+      type: "command"
+      argv:
+        - "{python_executable}"
+        - "{project_root}/scripts/run_cosyvoice_backend.py"
+        - "{output_path}"
+      fallback_to_placeholder: true
 
   musetalk:
     type: lip_sync
     model_id: "musetalk-v1.5"
     vram_mb: 4000
+    backend:
+      type: "command"
+      argv:
+        - "{python_executable}"
+        - "{project_root}/scripts/run_musetalk_backend.py"
+        - "{output_path}"
+      fallback_to_placeholder: true
 
   whisper:
     type: transcription
