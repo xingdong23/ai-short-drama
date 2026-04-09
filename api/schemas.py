@@ -15,6 +15,19 @@ class APIResponse(BaseModel, Generic[PayloadT]):
     error: str | None = None
 
 
+class TaskWorkspacePayload(BaseModel):
+    task_id: str
+    task_dir: Path
+    task_file_path: Path
+    script_path: Path
+    state_path: Path
+    manifest_path: Path
+    final_video_path: Path
+    created_at: str | None
+    theme: str | None
+    directories: dict[str, Path]
+
+
 class ShotPayload(BaseModel):
     id: str
     type: ShotType
@@ -71,21 +84,35 @@ class ScriptPayload(BaseModel):
 
 class PipelineRunRequest(BaseModel):
     theme: str = Field(min_length=1)
-    output_dir: Path
+    task_id: str | None = None
 
 
 class PipelineResumeRequest(BaseModel):
-    output_dir: Path
+    task_id: str
+
+
+class PipelineTaskCreateRequest(BaseModel):
+    theme: str | None = None
+
+
+class PipelineTaskCreatePayload(TaskWorkspacePayload):
+    pass
 
 
 class PipelineResultPayload(BaseModel):
+    task_id: str | None
+    task_dir: Path
+    task_file_path: Path | None = None
     output_dir: Path
     final_video_path: Path
     completed_steps: list[str]
+    directories: dict[str, Path]
 
 
 class PipelineRunStatusPayload(BaseModel):
     output_dir: Path
+    task_id: str | None
+    task_dir: Path
     status: str
     current_step: str
     completed_steps: list[str]
@@ -99,6 +126,8 @@ class PipelineRunStatusPayload(BaseModel):
     script_path: Path | None
     final_video_path: Path | None
     manifest_path: Path | None
+    task_file_path: Path | None
+    directories: dict[str, Path]
     artifact_counts: dict[str, int]
 
 
@@ -106,6 +135,7 @@ class PipelineStatusPayload(BaseModel):
     service: str
     status: str
     steps: list[str]
+    task_root_dir: Path
     run: PipelineRunStatusPayload | None = None
 
 
@@ -123,20 +153,22 @@ class PipelinePreflightPayload(BaseModel):
 
 class ScriptGenerateRequest(BaseModel):
     theme: str = Field(min_length=1)
-    output_dir: Path | None = None
+    task_id: str
 
 
 class ScriptGeneratePayload(BaseModel):
+    task_id: str
     script: ScriptPayload
     script_path: Path | None = None
 
 
 class CharacterReferenceRequest(BaseModel):
-    script: ScriptPayload
-    output_dir: Path
+    task_id: str
+    script: ScriptPayload | None = None
 
 
 class CharacterReferencePayload(BaseModel):
+    task_id: str
     reference_paths: dict[str, Path]
 
 
@@ -150,33 +182,33 @@ class CharacterTrainPayload(BaseModel):
 
 
 class VideoGenerateRequest(BaseModel):
-    script: ScriptPayload
-    output_dir: Path
-    references_dir: Path | None = None
+    task_id: str
+    script: ScriptPayload | None = None
 
 
 class VideoGeneratePayload(BaseModel):
+    task_id: str
     clip_paths: dict[str, Path]
 
 
 class VoiceSynthesizeRequest(BaseModel):
-    script: ScriptPayload
-    clips_dir: Path
-    output_dir: Path
+    task_id: str
+    script: ScriptPayload | None = None
 
 
 class VoiceSynthesizePayload(BaseModel):
+    task_id: str
     audio_paths: dict[str, Path]
     synced_paths: dict[str, Path]
 
 
 class ComposeFinalRequest(BaseModel):
-    script: ScriptPayload
-    clips_dir: Path
-    output_dir: Path
+    task_id: str
+    script: ScriptPayload | None = None
 
 
 class ComposeFinalPayload(BaseModel):
+    task_id: str
     final_video_path: Path
     subtitle_path: Path
     bgm_path: Path

@@ -51,17 +51,47 @@
               </label>
 
               <label class="field">
-                <span class="field-label">输出目录</span>
+                <span class="field-label">任务根目录</span>
                 <input
-                  id="output-dir-input"
-                  name="output_dir"
+                  id="task-root-input"
+                  name="task_root"
                   type="text"
-                  value="./output/debug-console-run"
+                  value="等待服务端返回"
                   autocomplete="off"
+                  readonly
                 />
               </label>
 
+              <div class="task-meta-grid">
+                <label class="field">
+                  <span class="field-label">当前 task_id</span>
+                  <input
+                    id="task-id-input"
+                    name="task_id"
+                    type="text"
+                    value=""
+                    placeholder="点击“开始任务”后自动生成"
+                    autocomplete="off"
+                    readonly
+                  />
+                </label>
+
+                <label class="field">
+                  <span class="field-label">当前工作目录</span>
+                  <input
+                    id="task-dir-input"
+                    name="task_dir"
+                    type="text"
+                    value=""
+                    placeholder="所有阶段产物都会放在这里"
+                    autocomplete="off"
+                    readonly
+                  />
+                </label>
+              </div>
+
               <div class="button-row">
+                <button id="start-task-button" class="action-button" type="button">开始任务</button>
                 <button id="run-pipeline-button" class="action-button action-primary" type="submit">
                   一键跑完整流水线
                 </button>
@@ -79,16 +109,16 @@
             </div>
 
             <ol class="guide-list">
-              <li>先填“主题”和“输出目录”。</li>
-              <li>如果想一键跑，直接点“运行完整流水线”。</li>
-              <li>如果想分步调，先点 <code>script</code>，再按顺序往后走。</li>
-              <li>剧本生成后，可以在下方直接编辑 JSON，再继续后面的阶段。</li>
-              <li>右侧会持续显示当前状态、环境检查、目录和最新产物。</li>
+              <li>先填主题，然后点“开始任务”，系统会生成一个 <code>task_id</code> 和独立工作目录。</li>
+              <li>这个任务后续会贯穿 <code>script</code> 到 <code>compose</code> 全流程，所有临时产物都放在当前工作目录里。</li>
+              <li>如果想一键跑，创建任务后直接点“运行完整流水线”。</li>
+              <li>如果想分步调，先点 <code>script</code>，可以在下方编辑 JSON，再按顺序往后走。</li>
+              <li>右侧会持续显示当前任务状态、环境检查、目录映射和最新产物。</li>
             </ol>
 
             <div class="guide-hint">
-              <strong>两种模式</strong>
-              <p>全流程模式适合快速验证；手动分步模式适合定位问题和单独调试阶段。</p>
+              <strong>现在的主线是 task_id</strong>
+              <p>不要再手工记一堆目录。先拿到 task_id，再围绕这个任务做全流程或分步调试。</p>
             </div>
           </aside>
         </div>
@@ -272,8 +302,8 @@
         <div class="diagnostics-grid">
           <div class="diagnostic-card">
             <div class="section-heading compact">
-              <p class="eyebrow">运行目录</p>
-              <h3>当前路径映射</h3>
+              <p class="eyebrow">任务目录</p>
+              <h3>当前任务路径映射</h3>
             </div>
             <div id="path-map" class="path-grid"></div>
           </div>

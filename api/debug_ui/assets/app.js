@@ -1,6 +1,9 @@
 const pipelineForm = document.getElementById("pipeline-form");
 const themeInput = document.getElementById("theme-input");
-const outputDirInput = document.getElementById("output-dir-input");
+const taskRootInput = document.getElementById("task-root-input");
+const taskIdInput = document.getElementById("task-id-input");
+const taskDirInput = document.getElementById("task-dir-input");
+const startTaskButton = document.getElementById("start-task-button");
 const runPipelineButton = document.getElementById("run-pipeline-button");
 const resumeButton = document.getElementById("resume-button");
 const statusButton = document.getElementById("status-button");
@@ -23,11 +26,10 @@ const runProgressLabel = document.getElementById("run-progress-label");
 const progressBar = document.getElementById("progress-bar");
 const statusMetadata = document.getElementById("status-metadata");
 
-const stageOrder = ["script", "character", "video", "voice", "compose"];
-
 const state = {
+  taskRoot: "",
+  task: null,
   script: null,
-  paths: null,
   latestArtifacts: {},
   latestRun: null,
 };
@@ -38,6 +40,7 @@ const stageLabelMap = {
   video: "视频",
   voice: "语音",
   compose: "合成",
+  complete: "完成",
 };
 
 const stageStateLabelMap = {
@@ -52,11 +55,17 @@ const runStatusLabelMap = {
   running: "执行中",
   completed: "已完成",
   failed: "失败",
-  ready: "就绪",
+  ready: "任务已创建",
 };
 
 const pathLabelMap = {
-  output: "输出根目录",
+  task_root: "任务根目录",
+  task_dir: "工作目录",
+  task_file: "任务文件",
+  state_file: "状态文件",
+  manifest_file: "运行清单",
+  script_file: "剧本文件",
+  final_video: "最终视频",
   references: "参考图目录",
   clips: "片段目录",
   audio: "音频目录",
@@ -76,6 +85,8 @@ const artifactLabelMap = {
 };
 
 const statusFieldLabelMap = {
+  task_id: "任务 ID",
+  task_dir: "工作目录",
   current_step: "当前阶段",
   theme: "主题",
   started_at: "开始时间",
@@ -108,8 +119,20 @@ function escapeHtml(value) {
 }
 
 function joinPath(base, segment) {
-  const trimmedBase = base.replace(/\/+$/, "");
+  const trimmedBase = String(base).replace(/\/+$/, "");
+  if (!trimmedBase) {
+    return segment;
+  }
   return `${trimmedBase}/${segment}`;
+}
+
+function parentPath(value) {
+  const normalized = String(value || "").replace(/\/+$/, "");
+  const index = normalized.lastIndexOf("/");
+  if (index <= 0) {
+    return normalized || "";
+  }
+  return normalized.slice(0, index);
 }
 
 function translatePreflightDetail(detail) {
@@ -130,18 +153,6 @@ function translatePreflightDetail(detail) {
     return `${binary} 已解析，来源：${source}`;
   }
   return detail;
-}
-
-function derivePaths() {
-  const outputDir = outputDirInput.value.trim() || "./output/debug-console-run";
-  return {
-    outputDir,
-    referencesDir: joinPath(outputDir, "references"),
-    clipsDir: joinPath(outputDir, "clips"),
-    audioDir: joinPath(outputDir, "audio"),
-    syncedDir: joinPath(outputDir, "synced"),
-    composeDir: joinPath(outputDir, "compose"),
-  };
 }
 
 function sampleScript(theme) {
@@ -181,6 +192,27 @@ function sampleScript(theme) {
   };
 }
 
+function deriveTaskPaths(task) {
+  if (!task?.task_dir) {
+    return {};
+  }
+  const taskDir = task.task_dir;
+  return {
+    task_root: state.taskRoot || parentPath(taskDir),
+    task_dir: taskDir,
+    task_file: task.task_file_path || joinPath(taskDir, "task.json"),
+    state_file: task.state_path || joinPath(taskDir, "state.json"),
+    manifest_file: task.manifest_path || joinPath(taskDir, "manifest.json"),
+    script_file: task.script_path || joinPath(taskDir, "script.json"),
+    final_video: task.final_video_path || joinPath(taskDir, "final.mp4"),
+    references: task.directories?.references || joinPath(taskDir, "references"),
+    clips: task.directories?.clips || joinPath(taskDir, "clips"),
+    audio: task.directories?.audio || joinPath(taskDir, "audio"),
+    synced: task.directories?.synced || joinPath(taskDir, "synced"),
+    compose: task.directories?.compose || joinPath(taskDir, "compose"),
+  };
+}
+
 function writeScript(script) {
   state.script = script;
   scriptEditor.value = JSON.stringify(script, null, 2);
@@ -199,16 +231,61 @@ function logEvent(label, payload) {
   responseViewer.textContent = `${label}\n\n${JSON.stringify(payload, null, 2)}`;
 }
 
+function renderTaskIdentity() {
+  taskRootInput.value = state.taskRoot || "等待服务端返回";
+  taskIdInput.value = state.task?.task_id || "";
+  taskDirInput.value = state.task?.task_dir || "";
+}
+
+function setTask(task) {
+  if (!task) {
+    return;
+  }
+  const taskDir = task.task_dir || task.output_dir || state.task?.task_dir || "";
+  const directories = task.directories || state.task?.directories || {
+    references: joinPath(taskDir, "references"),
+    clips: joinPath(taskDir, "clips"),
+    audio: joinPath(taskDir, "audio"),
+    synced: joinPath(taskDir, "synced"),
+    compose: joinPath(taskDir, "compose"),
+  };
+  state.task = {
+    ...state.task,
+    ...task,
+    task_dir: taskDir,
+    task_file_path: task.task_file_path || state.task?.task_file_path || joinPath(taskDir, "task.json"),
+    script_path: task.script_path || state.task?.script_path || joinPath(taskDir, "script.json"),
+    state_path: task.state_path || state.task?.state_path || joinPath(taskDir, "state.json"),
+    manifest_path: task.manifest_path || state.task?.manifest_path || joinPath(taskDir, "manifest.json"),
+    final_video_path:
+      task.final_video_path || state.task?.final_video_path || joinPath(taskDir, "final.mp4"),
+    directories,
+  };
+  if (!state.taskRoot && taskDir) {
+    state.taskRoot = parentPath(taskDir);
+  }
+  renderTaskIdentity();
+  renderPathMap();
+}
+
+function clearTaskState() {
+  state.task = null;
+  state.latestArtifacts = {};
+  state.latestRun = null;
+  renderTaskIdentity();
+  renderArtifacts();
+  renderStatus(null);
+  renderPathMap();
+}
+
 function renderPathMap() {
-  state.paths = derivePaths();
-  const entries = [
-    ["output", state.paths.outputDir],
-    ["references", state.paths.referencesDir],
-    ["clips", state.paths.clipsDir],
-    ["audio", state.paths.audioDir],
-    ["synced", state.paths.syncedDir],
-    ["compose", state.paths.composeDir],
-  ];
+  if (!state.task) {
+    pathMap.innerHTML =
+      '<div class="path-item"><strong>等待任务</strong><code>点击“开始任务”后，系统会分配 task_id 和独立工作目录。</code></div>';
+    return;
+  }
+
+  const entries = Object.entries(deriveTaskPaths(state.task));
   pathMap.innerHTML = entries
     .map(
       ([label, value]) =>
@@ -221,7 +298,7 @@ function renderArtifacts() {
   const artifactEntries = Object.entries(state.latestArtifacts);
   if (artifactEntries.length === 0) {
     artifactsGrid.innerHTML =
-      '<div class="artifact-card"><strong>等待中</strong><code>执行任意阶段后，这里会显示最新产物路径。</code></div>';
+      '<div class="artifact-card"><strong>等待中</strong><code>开始任务并执行任意阶段后，这里会显示当前 task_id 对应的最新产物。</code></div>';
     return;
   }
 
@@ -237,7 +314,7 @@ function renderArtifacts() {
 
 function stageArtifactComplete(step) {
   if (step === "script") {
-    return Boolean(scriptEditor.value.trim());
+    return Boolean(state.latestArtifacts.script || scriptEditor.value.trim());
   }
   if (step === "character") {
     return Array.isArray(state.latestArtifacts.references) && state.latestArtifacts.references.length > 0;
@@ -255,6 +332,9 @@ function stageArtifactComplete(step) {
 }
 
 function workflowNote(step, status) {
+  if (!state.task?.task_id) {
+    return "先开始任务，拿到 task_id 和工作目录。";
+  }
   if (status === "running") {
     return "当前阶段正在执行。";
   }
@@ -262,18 +342,18 @@ function workflowNote(step, status) {
     return "这个阶段执行失败了，先看右侧最近错误。";
   }
   if (step === "script") {
-    return status === "completed" ? "剧本已准备好，可以继续编辑或进入下一步。" : "先生成剧本，后续四步都依赖它。";
+    return status === "completed" ? "剧本已写入当前任务目录。" : "第一步：生成并保存 script.json。";
   }
   if (step === "character") {
-    return status === "completed" ? "参考图已生成，可以继续进入 video。" : "读取当前剧本，为角色镜头准备参考图。";
+    return status === "completed" ? "参考图已落到当前任务目录。" : "第二步：围绕当前 task_id 生成参考图。";
   }
   if (step === "video") {
-    return status === "completed" ? "片段已生成，可以继续进入 voice。" : "根据镜头类型路由到视频引擎，生成 clips。";
+    return status === "completed" ? "片段已经进入当前任务的 clips/。" : "第三步：生成视频片段。";
   }
   if (step === "voice") {
-    return status === "completed" ? "语音和同步片段已生成，可以继续 compose。" : "读取 clips，生成 audio 与 synced。";
+    return status === "completed" ? "audio/ 和 synced/ 已经更新。" : "第四步：生成配音并做口型同步。";
   }
-  return status === "completed" ? "最终成片已经生成。" : "最后一步，合成字幕、BGM 和 final.mp4。";
+  return status === "completed" ? "当前任务已经产出 final.mp4。" : "第五步：合成最终视频。";
 }
 
 function renderWorkflow(run) {
@@ -310,7 +390,7 @@ function renderWorkflow(run) {
 
 function renderStatus(run) {
   state.latestRun = run;
-  const status = run?.status || "idle";
+  const status = run?.status || (state.task ? "ready" : "idle");
   runStatusPill.textContent = runStatusLabelMap[status] || status;
   runStatusPill.className = `status-pill ${status}`;
   const progress = run?.progress_percent ?? 0;
@@ -318,11 +398,13 @@ function renderStatus(run) {
   progressBar.style.width = `${progress}%`;
 
   const metadata = [
+    ["task_id", run?.task_id || state.task?.task_id || "未开始"],
+    ["task_dir", run?.task_dir || state.task?.task_dir || "未分配"],
     [
       "current_step",
       run?.current_step ? `${run.current_step} / ${stageLabelMap[run.current_step] || run.current_step}` : "空闲",
     ],
-    ["theme", run?.theme || themeInput.value.trim() || "暂无"],
+    ["theme", run?.theme || state.task?.theme || themeInput.value.trim() || "暂无"],
     ["started_at", run?.started_at || "暂无"],
     ["updated_at", run?.updated_at || "暂无"],
     ["completed_at", run?.completed_at || "暂无"],
@@ -410,15 +492,62 @@ function updateArtifacts(payload) {
   renderWorkflow(state.latestRun);
 }
 
+function currentTaskOrThrow() {
+  if (!state.task?.task_id) {
+    throw new Error("请先点击“开始任务”，让系统分配 task_id。");
+  }
+  return state.task;
+}
+
+async function createTask() {
+  const payload = await apiRequest("/api/v1/pipeline/tasks", {
+    method: "POST",
+    body: JSON.stringify({
+      theme: themeInput.value.trim() || null,
+    }),
+  });
+  clearTaskState();
+  setTask(payload.data);
+  logEvent("开始任务", payload);
+  return payload.data;
+}
+
+async function ensureTask() {
+  if (state.task?.task_id) {
+    return state.task;
+  }
+  return createTask();
+}
+
 async function refreshStatus() {
-  renderPathMap();
-  const params = new URLSearchParams({ output_dir: state.paths.outputDir });
+  const task = currentTaskOrThrow();
+  const params = new URLSearchParams({ task_id: task.task_id });
   const payload = await apiRequest(`/api/v1/pipeline/status?${params.toString()}`, {
     method: "GET",
     headers: {},
   });
-  renderStatus(payload.data.run);
+  if (payload.data.task_root_dir) {
+    state.taskRoot = payload.data.task_root_dir;
+  }
+  if (payload.data.run) {
+    setTask(payload.data.run);
+    updateArtifacts(payload.data.run);
+    renderStatus(payload.data.run);
+  } else {
+    renderStatus(null);
+  }
   logEvent("流水线状态", payload);
+  return payload;
+}
+
+async function bootstrapStatus() {
+  const payload = await apiRequest("/api/v1/pipeline/status", {
+    method: "GET",
+    headers: {},
+  });
+  state.taskRoot = payload.data.task_root_dir || "";
+  renderTaskIdentity();
+  renderPathMap();
   return payload;
 }
 
@@ -444,17 +573,24 @@ async function withButton(button, task) {
   }
 }
 
+startTaskButton.addEventListener("click", async () => {
+  await withButton(startTaskButton, async () => {
+    await createTask();
+  });
+});
+
 pipelineForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await withButton(runPipelineButton, async () => {
-    renderPathMap();
+    const task = await ensureTask();
     const payload = await apiRequest("/api/v1/pipeline/run", {
       method: "POST",
       body: JSON.stringify({
         theme: themeInput.value.trim(),
-        output_dir: state.paths.outputDir,
+        task_id: task.task_id,
       }),
     });
+    setTask(payload.data);
     updateArtifacts(payload.data);
     logEvent("运行完整流水线", payload);
     await refreshStatus();
@@ -463,13 +599,14 @@ pipelineForm.addEventListener("submit", async (event) => {
 
 resumeButton.addEventListener("click", async () => {
   await withButton(resumeButton, async () => {
-    renderPathMap();
+    const task = currentTaskOrThrow();
     const payload = await apiRequest("/api/v1/pipeline/resume", {
       method: "POST",
       body: JSON.stringify({
-        output_dir: state.paths.outputDir,
+        task_id: task.task_id,
       }),
     });
+    setTask(payload.data);
     updateArtifacts(payload.data);
     logEvent("继续执行流水线", payload);
     await refreshStatus();
@@ -490,17 +627,18 @@ preflightButton.addEventListener("click", async () => {
 
 generateScriptButton.addEventListener("click", async () => {
   await withButton(generateScriptButton, async () => {
-    renderPathMap();
+    const task = await ensureTask();
     const payload = await apiRequest("/api/v1/script/generate", {
       method: "POST",
       body: JSON.stringify({
         theme: themeInput.value.trim(),
-        output_dir: state.paths.outputDir,
+        task_id: task.task_id,
       }),
     });
     writeScript(payload.data.script);
     updateArtifacts(payload.data);
     logEvent("执行 script", payload);
+    await refreshStatus();
   });
 });
 
@@ -521,82 +659,66 @@ loadSampleButton.addEventListener("click", () => {
 
 characterButton.addEventListener("click", async () => {
   await withButton(characterButton, async () => {
-    renderPathMap();
+    const task = await ensureTask();
     const payload = await apiRequest("/api/v1/character/reference", {
       method: "POST",
       body: JSON.stringify({
+        task_id: task.task_id,
         script: readScript(),
-        output_dir: state.paths.referencesDir,
       }),
     });
     updateArtifacts(payload.data);
     logEvent("执行 character", payload);
+    await refreshStatus();
   });
 });
 
 videoButton.addEventListener("click", async () => {
   await withButton(videoButton, async () => {
-    renderPathMap();
+    const task = await ensureTask();
     const payload = await apiRequest("/api/v1/video/generate", {
       method: "POST",
       body: JSON.stringify({
+        task_id: task.task_id,
         script: readScript(),
-        output_dir: state.paths.clipsDir,
-        references_dir: state.paths.referencesDir,
       }),
     });
     updateArtifacts(payload.data);
     logEvent("执行 video", payload);
+    await refreshStatus();
   });
 });
 
 voiceButton.addEventListener("click", async () => {
   await withButton(voiceButton, async () => {
-    renderPathMap();
+    const task = await ensureTask();
     const payload = await apiRequest("/api/v1/voice/synthesize", {
       method: "POST",
       body: JSON.stringify({
+        task_id: task.task_id,
         script: readScript(),
-        clips_dir: state.paths.clipsDir,
-        output_dir: state.paths.outputDir,
       }),
     });
     updateArtifacts(payload.data);
     logEvent("执行 voice", payload);
+    await refreshStatus();
   });
 });
 
 composeButton.addEventListener("click", async () => {
   await withButton(composeButton, async () => {
-    renderPathMap();
-    const clipsDir =
-      Array.isArray(state.latestArtifacts.synced) && state.latestArtifacts.synced.length > 0
-        ? state.paths.syncedDir
-        : state.paths.clipsDir;
+    const task = await ensureTask();
     const payload = await apiRequest("/api/v1/compose/final", {
       method: "POST",
       body: JSON.stringify({
+        task_id: task.task_id,
         script: readScript(),
-        clips_dir: clipsDir,
-        output_dir: state.paths.outputDir,
       }),
     });
     updateArtifacts(payload.data);
     logEvent("执行 compose", payload);
     await refreshStatus();
   });
-});
-
-function resetRunScopedState() {
-  state.latestArtifacts = {};
-  state.latestRun = null;
-  renderArtifacts();
-  renderStatus(null);
-}
-
-outputDirInput.addEventListener("change", () => {
-  renderPathMap();
-  resetRunScopedState();
 });
 
 themeInput.addEventListener("change", () => {
@@ -606,12 +728,15 @@ themeInput.addEventListener("change", () => {
   }
 });
 
+renderTaskIdentity();
 renderPathMap();
 renderArtifacts();
 renderPreflight(null);
 writeScript(sampleScript(themeInput.value));
 renderStatus(null);
 
-runPreflight().catch((error) => {
-  logEvent("环境检查失败", { error: String(error.message || error) });
-});
+bootstrapStatus()
+  .then(() => runPreflight())
+  .catch((error) => {
+    logEvent("初始化失败", { error: String(error.message || error) });
+  });

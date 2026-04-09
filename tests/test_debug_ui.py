@@ -13,6 +13,7 @@ def test_debug_ui_route_serves_html() -> None:
     assert "text/html" in response.headers["content-type"]
     assert "AI短剧调试控制台" in response.text
     assert "怎么使用" in response.text
+    assert "task_id" in response.text
     assert "script" in response.text
     assert "character" in response.text
     assert "video" in response.text

@@ -6,6 +6,7 @@ from pathlib import Path
 
 @dataclass
 class PipelineState:
+    task_id: str | None = None
     current_step: str = "script"
     completed: list[str] = field(default_factory=list)
     status: str = "pending"
@@ -28,6 +29,7 @@ class PipelineState:
         if not isinstance(status, str):
             status = cls._infer_status(current_step, completed)
         return cls(
+            task_id=cls._maybe_string(payload.get("task_id")),
             current_step=current_step,
             completed=completed,
             status=status,
@@ -44,6 +46,7 @@ class PipelineState:
         path.write_text(
             json.dumps(
                 {
+                    "task_id": self.task_id,
                     "current_step": self.current_step,
                     "completed": self.completed,
                     "status": self.status,
@@ -59,7 +62,7 @@ class PipelineState:
             encoding="utf-8",
         )
 
-    def mark_running(self, step: str, theme: str | None = None) -> None:
+    def mark_running(self, step: str, theme: str | None = None, task_id: str | None = None) -> None:
         now = self._timestamp()
         if self.started_at is None:
             self.started_at = now
@@ -68,6 +71,8 @@ class PipelineState:
         self.current_step = step
         self.failed_at = None
         self.last_error = None
+        if task_id is not None:
+            self.task_id = task_id
         if theme is not None:
             self.theme = theme
 

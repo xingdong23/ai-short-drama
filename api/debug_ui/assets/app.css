@@ -210,6 +210,12 @@ body::before {
   gap: 12px;
 }
 
+.task-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .field-label {
   font-size: 0.88rem;
   font-weight: 700;
@@ -235,6 +241,11 @@ textarea {
 input {
   min-height: 50px;
   padding: 0 14px;
+}
+
+input[readonly] {
+  color: rgba(21, 34, 43, 0.78);
+  background: rgba(245, 239, 231, 0.95);
 }
 
 textarea {
@@ -611,6 +622,10 @@ code {
 
   .workflow-grid,
   .metadata-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-meta-grid {
     grid-template-columns: 1fr;
   }
 
