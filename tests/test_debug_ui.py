@@ -11,7 +11,7 @@ def test_debug_ui_route_serves_html() -> None:
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "AI Short Drama Debug Console" in response.text
+    assert "AI短剧调试控制台" in response.text
     assert "/debug/assets/app.js" in response.text
 
 

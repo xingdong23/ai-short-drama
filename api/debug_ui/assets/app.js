@@ -32,6 +32,72 @@ const state = {
   latestRun: null,
 };
 
+const stageLabelMap = {
+  script: "剧本",
+  character: "角色",
+  video: "视频",
+  voice: "语音",
+  compose: "合成",
+};
+
+const stageStateLabelMap = {
+  pending: "等待中",
+  completed: "已完成",
+  running: "执行中",
+  failed: "失败",
+};
+
+const runStatusLabelMap = {
+  idle: "空闲",
+  running: "执行中",
+  completed: "已完成",
+  failed: "失败",
+  ready: "就绪",
+};
+
+const pathLabelMap = {
+  output: "输出根目录",
+  references: "参考图目录",
+  clips: "片段目录",
+  audio: "音频目录",
+  synced: "同步目录",
+  compose: "合成目录",
+};
+
+const artifactLabelMap = {
+  script: "剧本文件",
+  final_video: "最终视频",
+  subtitle: "字幕文件",
+  bgm: "背景音乐",
+  references: "参考图",
+  clips: "视频片段",
+  audio: "音频文件",
+  synced: "同步片段",
+};
+
+const statusFieldLabelMap = {
+  current_step: "当前阶段",
+  theme: "主题",
+  started_at: "开始时间",
+  updated_at: "更新时间",
+  completed_at: "完成时间",
+  last_error: "最近错误",
+};
+
+const preflightCheckLabelMap = {
+  pipeline_config: "流程配置",
+  models_config: "模型配置",
+  characters_config: "角色配置",
+  ffmpeg: "FFmpeg",
+  ffprobe: "FFprobe",
+};
+
+const preflightStatusLabelMap = {
+  ok: "正常",
+  missing: "缺失",
+  error: "异常",
+};
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -44,6 +110,26 @@ function escapeHtml(value) {
 function joinPath(base, segment) {
   const trimmedBase = base.replace(/\/+$/, "");
   return `${trimmedBase}/${segment}`;
+}
+
+function translatePreflightDetail(detail) {
+  if (!detail) {
+    return "";
+  }
+  if (detail.startsWith("Found ")) {
+    return `已找到 ${detail.slice("Found ".length)}`;
+  }
+  if (detail.startsWith("Missing ")) {
+    return `缺少 ${detail.slice("Missing ".length)}`;
+  }
+  if (detail.endsWith(" not found")) {
+    return `${detail.slice(0, -" not found".length)} 未找到`;
+  }
+  if (detail.includes(" resolved via ")) {
+    const [binary, source] = detail.split(" resolved via ");
+    return `${binary} 已解析，来源：${source}`;
+  }
+  return detail;
 }
 
 function derivePaths() {
@@ -59,15 +145,15 @@ function derivePaths() {
 }
 
 function sampleScript(theme) {
-  const cleanTheme = theme.trim() || "untitled story";
+  const cleanTheme = theme.trim() || "未命名故事";
   return {
-    title: `Episode 1: ${cleanTheme.replace(/\b\w/g, (char) => char.toUpperCase())}`,
+    title: `第1集：${cleanTheme}`,
     theme: cleanTheme,
     scenes: [
       {
         id: "shot_001",
         type: "establishing",
-        prompt: `Atmospheric city establishing shot for ${cleanTheme}`,
+        prompt: `${cleanTheme}的城市氛围建立镜头`,
         character: null,
         dialogue: null,
         duration: 3,
@@ -76,16 +162,16 @@ function sampleScript(theme) {
       {
         id: "shot_002",
         type: "dialogue",
-        prompt: `Xiaomei reacts emotionally within the theme of ${cleanTheme}`,
+        prompt: `小美在${cleanTheme}的情境里出现情绪波动`,
         character: "xiaomei",
-        dialogue: `This story begins with ${cleanTheme}.`,
+        dialogue: `这段故事，就从${cleanTheme}开始。`,
         duration: 4,
         camera: "close_up",
       },
       {
         id: "shot_003",
         type: "transition",
-        prompt: `Transition shot that escalates tension around ${cleanTheme}`,
+        prompt: `把${cleanTheme}推向更强张力的转场镜头`,
         character: null,
         dialogue: null,
         duration: 2,
@@ -102,7 +188,7 @@ function writeScript(script) {
 
 function readScript() {
   if (!scriptEditor.value.trim()) {
-    throw new Error("Generate a script or load the sample before running manual stages.");
+    throw new Error("请先生成剧本，或者先载入示例，再执行手动阶段。");
   }
   const parsed = JSON.parse(scriptEditor.value);
   state.script = parsed;
@@ -126,7 +212,7 @@ function renderPathMap() {
   pathMap.innerHTML = entries
     .map(
       ([label, value]) =>
-        `<div class="path-item"><strong>${escapeHtml(label)}</strong><code>${escapeHtml(value)}</code></div>`,
+        `<div class="path-item"><strong>${escapeHtml(pathLabelMap[label] || label)}</strong><code>${escapeHtml(value)}</code></div>`,
     )
     .join("");
 }
@@ -135,14 +221,14 @@ function renderArtifacts() {
   const artifactEntries = Object.entries(state.latestArtifacts);
   if (artifactEntries.length === 0) {
     artifactsGrid.innerHTML =
-      '<div class="artifact-card"><strong>waiting</strong><p>Run a stage and the latest artifact paths will show up here.</p></div>';
+      '<div class="artifact-card"><strong>等待中</strong><p>执行任意阶段后，最新产物路径会显示在这里。</p></div>';
     return;
   }
 
   artifactsGrid.innerHTML = artifactEntries
     .map(
       ([label, value]) =>
-        `<div class="artifact-card"><strong>${escapeHtml(label)}</strong><code>${escapeHtml(
+        `<div class="artifact-card"><strong>${escapeHtml(artifactLabelMap[label] || label)}</strong><code>${escapeHtml(
           Array.isArray(value) ? value.join("\n") : value,
         )}</code></div>`,
     )
@@ -168,7 +254,9 @@ function renderStageStrip(run) {
         cssClass += " running";
         label = "running";
       }
-      return `<div class="${cssClass}"><strong>${escapeHtml(step)}</strong><span>${escapeHtml(label)}</span></div>`;
+      return `<div class="${cssClass}"><strong>${escapeHtml(
+        stageLabelMap[step] || step,
+      )}</strong><span>${escapeHtml(stageStateLabelMap[label] || label)}</span></div>`;
     })
     .join("");
 }
@@ -176,24 +264,27 @@ function renderStageStrip(run) {
 function renderStatus(run) {
   state.latestRun = run;
   const status = run?.status || "idle";
-  runStatusPill.textContent = status;
+  runStatusPill.textContent = runStatusLabelMap[status] || status;
   runStatusPill.className = `status-pill ${status}`;
   const progress = run?.progress_percent ?? 0;
   runProgressLabel.textContent = `${progress}%`;
   progressBar.style.width = `${progress}%`;
 
   const metadata = [
-    ["current_step", run?.current_step || "idle"],
-    ["theme", run?.theme || themeInput.value.trim() || "n/a"],
-    ["started_at", run?.started_at || "n/a"],
-    ["updated_at", run?.updated_at || "n/a"],
-    ["completed_at", run?.completed_at || "n/a"],
-    ["last_error", run?.last_error || "none"],
+    [
+      "current_step",
+      run?.current_step ? stageLabelMap[run.current_step] || run.current_step : "空闲",
+    ],
+    ["theme", run?.theme || themeInput.value.trim() || "暂无"],
+    ["started_at", run?.started_at || "暂无"],
+    ["updated_at", run?.updated_at || "暂无"],
+    ["completed_at", run?.completed_at || "暂无"],
+    ["last_error", run?.last_error || "无"],
   ];
   statusMetadata.innerHTML = metadata
     .map(
       ([label, value]) =>
-        `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`,
+        `<div><dt>${escapeHtml(statusFieldLabelMap[label] || label)}</dt><dd>${escapeHtml(value)}</dd></div>`,
     )
     .join("");
 
@@ -204,7 +295,7 @@ function renderPreflight(report) {
   const entries = Object.entries(report?.checks || {});
   if (entries.length === 0) {
     preflightChecks.innerHTML =
-      '<div class="check-item"><strong>no data</strong><small>Run preflight to inspect environment readiness.</small></div>';
+      '<div class="check-item"><strong>暂无数据</strong><small>点击环境检查后，这里会显示当前运行环境是否就绪。</small></div>';
     return;
   }
 
@@ -212,8 +303,10 @@ function renderPreflight(report) {
     .map(([name, check]) => {
       const detail = [check.detail, check.path, check.source].filter(Boolean).join(" | ");
       return `<div class="check-item ${escapeHtml(check.status)}"><strong>${escapeHtml(
-        name,
-      )}</strong><small>${escapeHtml(detail)}</small></div>`;
+        preflightCheckLabelMap[name] || name,
+      )}</strong><small>${escapeHtml(
+        `${preflightStatusLabelMap[check.status] || check.status} | ${translatePreflightDetail(detail)}`,
+      )}</small></div>`;
     })
     .join("");
 }
@@ -228,7 +321,7 @@ async function apiRequest(url, options = {}) {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Request failed (${response.status}): ${text}`);
+    throw new Error(`请求失败（${response.status}）：${text}`);
   }
 
   return response.json();
@@ -271,7 +364,7 @@ async function refreshStatus() {
     headers: {},
   });
   renderStatus(payload.data.run);
-  logEvent("Pipeline Status", payload);
+  logEvent("流水线状态", payload);
   return payload;
 }
 
@@ -281,14 +374,14 @@ async function runPreflight() {
     headers: {},
   });
   renderPreflight(payload.data);
-  logEvent("Pipeline Preflight", payload);
+  logEvent("环境预检查", payload);
   return payload;
 }
 
 async function withButton(button, task) {
   const originalLabel = button.textContent;
   button.disabled = true;
-  button.textContent = "Working...";
+  button.textContent = "处理中...";
   try {
     return await task();
   } finally {
@@ -310,7 +403,7 @@ pipelineForm.addEventListener("submit", async (event) => {
     });
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Pipeline Run", payload);
+    logEvent("运行完整流水线", payload);
     await refreshStatus();
   });
 });
@@ -326,7 +419,7 @@ resumeButton.addEventListener("click", async () => {
     });
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Pipeline Resume", payload);
+    logEvent("继续执行流水线", payload);
     await refreshStatus();
   });
 });
@@ -356,7 +449,7 @@ generateScriptButton.addEventListener("click", async () => {
     writeScript(payload.data.script);
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Script Generate", payload);
+    logEvent("生成剧本", payload);
   });
 });
 
@@ -364,13 +457,13 @@ formatScriptButton.addEventListener("click", () => {
   try {
     writeScript(readScript());
   } catch (error) {
-    logEvent("Script JSON Error", { error: String(error.message || error) });
+    logEvent("剧本 JSON 错误", { error: String(error.message || error) });
   }
 });
 
 loadSampleButton.addEventListener("click", () => {
   writeScript(sampleScript(themeInput.value));
-  logEvent("Sample Script Loaded", state.script);
+    logEvent("已载入示例剧本", state.script);
 });
 
 characterButton.addEventListener("click", async () => {
@@ -385,7 +478,7 @@ characterButton.addEventListener("click", async () => {
     });
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Character Reference", payload);
+    logEvent("生成角色参考图", payload);
   });
 });
 
@@ -402,7 +495,7 @@ videoButton.addEventListener("click", async () => {
     });
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Video Generate", payload);
+    logEvent("生成视频片段", payload);
   });
 });
 
@@ -419,7 +512,7 @@ voiceButton.addEventListener("click", async () => {
     });
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Voice Synthesize", payload);
+    logEvent("生成语音与口型", payload);
   });
 });
 
@@ -440,7 +533,7 @@ composeButton.addEventListener("click", async () => {
     });
     Object.assign(state.latestArtifacts, collectArtifactValues(payload.data));
     renderArtifacts();
-    logEvent("Compose Final", payload);
+    logEvent("执行最终合成", payload);
     await refreshStatus();
   });
 });
@@ -454,9 +547,9 @@ themeInput.addEventListener("change", () => {
 
 renderPathMap();
 renderArtifacts();
-renderPreflight(null);
-renderStatus(null);
-writeScript(sampleScript(themeInput.value));
+  renderPreflight(null);
+  renderStatus(null);
+  writeScript(sampleScript(themeInput.value));
 runPreflight().catch((error) => {
-  logEvent("Preflight Error", { error: String(error.message || error) });
+  logEvent("环境检查失败", { error: String(error.message || error) });
 });

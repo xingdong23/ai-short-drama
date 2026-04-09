@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Short Drama Debug Console</title>
+    <title>AI短剧调试控制台</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,41 +16,41 @@
     <div class="page-shell">
       <header class="hero panel">
         <div class="hero-copy">
-          <p class="eyebrow">Debug Surface</p>
-          <h1>AI Short Drama Debug Console</h1>
+          <p class="eyebrow">调试界面</p>
+          <h1>AI短剧调试控制台</h1>
           <p class="hero-text">
-            Run the full pipeline, execute stages one by one, inspect status, and keep the current
-            script payload editable while you debug the flow.
+            在一个页面里跑完整流水线、逐阶段调试、查看运行状态，并随时编辑当前剧本
+            JSON，方便把整条链路串起来。
           </p>
         </div>
         <div class="hero-badges">
-          <span class="badge">Pipeline Run</span>
-          <span class="badge">Stage Chaining</span>
-          <span class="badge">Status + Preflight</span>
+          <span class="badge">全流程运行</span>
+          <span class="badge">阶段串联</span>
+          <span class="badge">状态与环境检查</span>
         </div>
       </header>
 
       <main class="workspace">
         <section class="panel controls-panel">
           <div class="section-heading">
-            <p class="eyebrow">Control Deck</p>
-            <h2>Workspace</h2>
+            <p class="eyebrow">控制面板</p>
+            <h2>工作区</h2>
           </div>
 
           <form id="pipeline-form" class="control-form">
             <label class="field">
-              <span class="field-label">Theme</span>
+              <span class="field-label">主题</span>
               <input
                 id="theme-input"
                 name="theme"
                 type="text"
-                value="office revenge in neon rain"
+                value="霓虹雨夜里的办公室复仇"
                 autocomplete="off"
               />
             </label>
 
             <label class="field">
-              <span class="field-label">Output Directory</span>
+              <span class="field-label">输出目录</span>
               <input
                 id="output-dir-input"
                 name="output_dir"
@@ -62,18 +62,18 @@
 
             <div class="button-row">
               <button id="run-pipeline-button" class="action-button action-primary" type="submit">
-                Run Full Pipeline
+                运行完整流水线
               </button>
-              <button id="resume-button" class="action-button" type="button">Resume</button>
-              <button id="status-button" class="action-button" type="button">Refresh Status</button>
-              <button id="preflight-button" class="action-button" type="button">Preflight</button>
+              <button id="resume-button" class="action-button" type="button">继续执行</button>
+              <button id="status-button" class="action-button" type="button">刷新状态</button>
+              <button id="preflight-button" class="action-button" type="button">环境检查</button>
             </div>
           </form>
 
           <div class="path-summary">
             <div class="section-heading compact">
-              <p class="eyebrow">Derived Layout</p>
-              <h3>Run Directories</h3>
+              <p class="eyebrow">派生目录</p>
+              <h3>运行目录</h3>
             </div>
             <div id="path-map" class="path-grid"></div>
           </div>
@@ -83,33 +83,33 @@
 
         <section class="panel script-panel">
           <div class="section-heading">
-            <p class="eyebrow">Editable Payload</p>
-            <h2>Script Workbench</h2>
+            <p class="eyebrow">可编辑载荷</p>
+            <h2>剧本工作台</h2>
           </div>
 
           <div class="button-row tight">
             <button id="generate-script-button" class="action-button action-primary" type="button">
-              Generate Script
+              生成剧本
             </button>
-            <button id="format-script-button" class="action-button" type="button">Format JSON</button>
-            <button id="load-sample-button" class="action-button" type="button">Load Sample</button>
+            <button id="format-script-button" class="action-button" type="button">格式化 JSON</button>
+            <button id="load-sample-button" class="action-button" type="button">载入示例</button>
           </div>
 
           <label class="field script-field">
-            <span class="field-label">Script JSON</span>
+            <span class="field-label">剧本 JSON</span>
             <textarea id="script-editor" spellcheck="false"></textarea>
           </label>
         </section>
 
         <section class="panel monitor-panel">
           <div class="section-heading">
-            <p class="eyebrow">Observability</p>
-            <h2>Run Monitor</h2>
+            <p class="eyebrow">可观测性</p>
+            <h2>运行监视器</h2>
           </div>
 
           <div class="status-block">
             <div class="status-topline">
-              <span id="run-status-pill" class="status-pill idle">idle</span>
+              <span id="run-status-pill" class="status-pill idle">空闲</span>
               <span id="run-progress-label" class="status-meta">0%</span>
             </div>
             <div class="progress-track" aria-hidden="true">
@@ -118,63 +118,63 @@
             <dl id="status-metadata" class="metadata-grid"></dl>
           </div>
 
-          <div class="preflight-block">
-            <div class="section-heading compact">
-              <p class="eyebrow">Environment</p>
-              <h3>Preflight</h3>
+            <div class="preflight-block">
+              <div class="section-heading compact">
+              <p class="eyebrow">环境</p>
+              <h3>预检查</h3>
+              </div>
+              <div id="preflight-checks" class="check-list"></div>
             </div>
-            <div id="preflight-checks" class="check-list"></div>
-          </div>
 
           <div class="response-block">
             <div class="section-heading compact">
-              <p class="eyebrow">Response Log</p>
-              <h3>Latest Event</h3>
+              <p class="eyebrow">响应日志</p>
+              <h3>最新事件</h3>
             </div>
-            <pre id="response-viewer" class="response-viewer">No events yet.</pre>
+            <pre id="response-viewer" class="response-viewer">暂时还没有事件。</pre>
           </div>
         </section>
       </main>
 
       <section class="panel stages-panel">
         <div class="section-heading">
-          <p class="eyebrow">Stage Chaining</p>
-          <h2>Manual Flow</h2>
+          <p class="eyebrow">阶段串联</p>
+          <h2>手动流程</h2>
         </div>
         <div class="stage-grid">
           <article class="stage-card">
             <p class="stage-index">01</p>
-            <h3>Character Reference</h3>
-            <p>Write reference artifacts into the run's <code>references/</code> directory.</p>
+            <h3>角色参考图</h3>
+            <p>把参考图产物写入当前运行目录下的 <code>references/</code>。</p>
             <button id="character-button" class="action-button action-primary" type="button">
-              Generate References
+              生成参考图
             </button>
           </article>
 
           <article class="stage-card">
             <p class="stage-index">02</p>
-            <h3>Video Clips</h3>
-            <p>Route shots and create clip artifacts inside the run's <code>clips/</code> directory.</p>
+            <h3>视频片段</h3>
+            <p>对镜头做路由并在当前运行目录下的 <code>clips/</code> 生成片段。</p>
             <button id="video-button" class="action-button action-primary" type="button">
-              Generate Clips
+              生成片段
             </button>
           </article>
 
           <article class="stage-card">
             <p class="stage-index">03</p>
-            <h3>Voice + Lip Sync</h3>
-            <p>Create audio under <code>audio/</code> and synced clips under <code>synced/</code>.</p>
+            <h3>配音与口型</h3>
+            <p>在 <code>audio/</code> 生成音频，并在 <code>synced/</code> 生成同步片段。</p>
             <button id="voice-button" class="action-button action-primary" type="button">
-              Generate Voice
+              生成语音
             </button>
           </article>
 
           <article class="stage-card">
             <p class="stage-index">04</p>
-            <h3>Compose</h3>
-            <p>Build subtitles, BGM, and the final render using the latest clip directory.</p>
+            <h3>最终合成</h3>
+            <p>基于当前最新的片段目录，生成字幕、BGM 和最终成片。</p>
             <button id="compose-button" class="action-button action-primary" type="button">
-              Compose Final
+              执行合成
             </button>
           </article>
         </div>
@@ -182,8 +182,8 @@
 
       <section class="panel artifacts-panel">
         <div class="section-heading">
-          <p class="eyebrow">Artifacts</p>
-          <h2>Latest Paths</h2>
+          <p class="eyebrow">产物</p>
+          <h2>最新路径</h2>
         </div>
         <div id="artifacts-grid" class="artifact-grid"></div>
       </section>
