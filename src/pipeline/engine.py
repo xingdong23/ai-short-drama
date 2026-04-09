@@ -38,9 +38,16 @@ class PipelineResult:
 @dataclass(frozen=True)
 class PipelineInspection:
     output_dir: Path
+    status: str
     current_step: str
     completed_steps: list[str]
     progress_percent: int
+    theme: str | None
+    started_at: str | None
+    updated_at: str | None
+    completed_at: str | None
+    failed_at: str | None
+    last_error: str | None
     script_path: Path | None
     final_video_path: Path | None
     manifest_path: Path | None
@@ -82,98 +89,124 @@ class PipelineEngine:
         if script is None and theme is None:
             raise ValueError("Resume requires an existing script.json")
 
-        if "script" not in state.completed:
-            if theme is None:
-                raise ValueError("Theme is required for a fresh pipeline run")
-            script = self.scriptwriter.generate(theme)
-            self._write_script(output_dir, script)
-            state.mark_completed("script", "character")
-            state.save(state_path)
-            self._write_manifest(output_dir)
+        try:
+            if "script" not in state.completed:
+                if theme is None:
+                    raise ValueError("Theme is required for a fresh pipeline run")
+                state.mark_running("script", theme=theme)
+                state.save(state_path)
+                self._write_manifest(output_dir)
+                script = self.scriptwriter.generate(theme)
+                self._write_script(output_dir, script)
+                state.mark_completed("script", "character")
+                state.save(state_path)
+                self._write_manifest(output_dir)
 
-        if script is None:
-            raise RuntimeError("Script must be available before continuing")
+            if script is None:
+                raise RuntimeError("Script must be available before continuing")
 
-        references_dir = output_dir / "references"
-        clips_dir = output_dir / "clips"
-        audio_dir = output_dir / "audio"
-        synced_dir = output_dir / "synced"
-        compose_dir = output_dir / "compose"
+            references_dir = output_dir / "references"
+            clips_dir = output_dir / "clips"
+            audio_dir = output_dir / "audio"
+            synced_dir = output_dir / "synced"
+            compose_dir = output_dir / "compose"
 
-        if "character" not in state.completed:
-            self.reference_generator.generate_references(script, references_dir)
-            state.mark_completed("character", "video")
-            state.save(state_path)
-            self._write_manifest(output_dir)
+            if "character" not in state.completed:
+                state.mark_running("character")
+                state.save(state_path)
+                self._write_manifest(output_dir)
+                self.reference_generator.generate_references(script, references_dir)
+                state.mark_completed("character", "video")
+                state.save(state_path)
+                self._write_manifest(output_dir)
 
-        clip_paths: list[Path] = []
-        if "video" not in state.completed:
-            for scene in script.scenes:
-                reference_candidate = references_dir / f"{scene.id}.txt"
-                reference_path = reference_candidate if reference_candidate.exists() else None
-                decision = self.router.route(scene)
-                engine = self.skyreels_engine if decision.engine_name.startswith("skyreels") else self.wan_engine
-                clip_paths.append(
-                    engine.generate(
-                        shot=scene,
-                        output_dir=clips_dir,
-                        mode=decision.mode,
-                        reference_path=reference_path,
+            clip_paths: list[Path] = []
+            if "video" not in state.completed:
+                state.mark_running("video")
+                state.save(state_path)
+                self._write_manifest(output_dir)
+                for scene in script.scenes:
+                    reference_candidate = references_dir / f"{scene.id}.txt"
+                    reference_path = reference_candidate if reference_candidate.exists() else None
+                    decision = self.router.route(scene)
+                    engine = (
+                        self.skyreels_engine
+                        if decision.engine_name.startswith("skyreels")
+                        else self.wan_engine
                     )
+                    clip_paths.append(
+                        engine.generate(
+                            shot=scene,
+                            output_dir=clips_dir,
+                            mode=decision.mode,
+                            reference_path=reference_path,
+                        )
+                    )
+                state.mark_completed("video", "voice")
+                state.save(state_path)
+                self._write_manifest(output_dir)
+            else:
+                clip_paths = sorted(clips_dir.glob("*.mp4"))
+
+            synced_paths: list[Path] = []
+            if "voice" not in state.completed:
+                state.mark_running("voice")
+                state.save(state_path)
+                self._write_manifest(output_dir)
+                for scene in script.scenes:
+                    clip_path = clips_dir / f"{scene.id}.mp4"
+                    if scene.dialogue:
+                        audio_path = self.tts_engine.synthesize(scene, audio_dir)
+                        synced_paths.append(
+                            self.lip_sync_engine.lip_sync(
+                                shot=scene,
+                                clip_path=clip_path,
+                                output_dir=synced_dir,
+                                audio_path=audio_path,
+                            )
+                        )
+                    else:
+                        synced_paths.append(
+                            self.lip_sync_engine.lip_sync(
+                                shot=scene,
+                                clip_path=clip_path,
+                                output_dir=synced_dir,
+                            )
+                        )
+                state.mark_completed("voice", "compose")
+                state.save(state_path)
+                self._write_manifest(output_dir)
+            else:
+                synced_paths = sorted(synced_dir.glob("*.mp4"))
+
+            final_video_path = output_dir / "final.mp4"
+            if "compose" not in state.completed:
+                state.mark_running("compose")
+                state.save(state_path)
+                self._write_manifest(output_dir)
+                subtitle_path = self.subtitle_generator.generate(script, compose_dir)
+                bgm_path = self.bgm_mixer.select_track(compose_dir)
+                self.composer.compose(
+                    clips=synced_paths or clip_paths,
+                    subtitle_path=subtitle_path,
+                    bgm_path=bgm_path,
+                    output_path=final_video_path,
                 )
-            state.mark_completed("video", "voice")
-            state.save(state_path)
-            self._write_manifest(output_dir)
-        else:
-            clip_paths = sorted(clips_dir.glob("*.mp4"))
+                state.mark_completed("compose", "complete")
+                state.mark_finished()
+                state.save(state_path)
+                self._write_manifest(output_dir)
 
-        synced_paths: list[Path] = []
-        if "voice" not in state.completed:
-            for scene in script.scenes:
-                clip_path = clips_dir / f"{scene.id}.mp4"
-                if scene.dialogue:
-                    audio_path = self.tts_engine.synthesize(scene, audio_dir)
-                    synced_paths.append(
-                        self.lip_sync_engine.lip_sync(
-                            shot=scene,
-                            clip_path=clip_path,
-                            output_dir=synced_dir,
-                            audio_path=audio_path,
-                        )
-                    )
-                else:
-                    synced_paths.append(
-                        self.lip_sync_engine.lip_sync(
-                            shot=scene,
-                            clip_path=clip_path,
-                            output_dir=synced_dir,
-                        )
-                    )
-            state.mark_completed("voice", "compose")
-            state.save(state_path)
-            self._write_manifest(output_dir)
-        else:
-            synced_paths = sorted(synced_dir.glob("*.mp4"))
-
-        final_video_path = output_dir / "final.mp4"
-        if "compose" not in state.completed:
-            subtitle_path = self.subtitle_generator.generate(script, compose_dir)
-            bgm_path = self.bgm_mixer.select_track(compose_dir)
-            self.composer.compose(
-                clips=synced_paths or clip_paths,
-                subtitle_path=subtitle_path,
-                bgm_path=bgm_path,
-                output_path=final_video_path,
+            return PipelineResult(
+                output_dir=output_dir,
+                final_video_path=final_video_path,
+                completed_steps=list(state.completed),
             )
-            state.mark_completed("compose", "complete")
+        except Exception as exc:
+            state.mark_failed(state.current_step, str(exc))
             state.save(state_path)
             self._write_manifest(output_dir)
-
-        return PipelineResult(
-            output_dir=output_dir,
-            final_video_path=final_video_path,
-            completed_steps=list(state.completed),
-        )
+            raise
 
     def _ensure_layout(self, output_dir: Path) -> None:
         for directory in [
@@ -209,9 +242,16 @@ class PipelineEngine:
 
         return PipelineInspection(
             output_dir=output_dir,
+            status=state.status,
             current_step=state.current_step,
             completed_steps=list(state.completed),
             progress_percent=progress_percent,
+            theme=state.theme,
+            started_at=state.started_at,
+            updated_at=state.updated_at,
+            completed_at=state.completed_at,
+            failed_at=state.failed_at,
+            last_error=state.last_error,
             script_path=script_path if script_path.exists() else None,
             final_video_path=final_video_path if final_video_path.exists() else None,
             manifest_path=manifest_path if manifest_path.exists() else None,
@@ -229,9 +269,16 @@ class PipelineEngine:
         manifest_path = output_dir / "manifest.json"
         manifest_payload = {
             "output_dir": str(inspection.output_dir),
+            "status": inspection.status,
             "current_step": inspection.current_step,
             "completed_steps": inspection.completed_steps,
             "progress_percent": inspection.progress_percent,
+            "theme": inspection.theme,
+            "started_at": inspection.started_at,
+            "updated_at": inspection.updated_at,
+            "completed_at": inspection.completed_at,
+            "failed_at": inspection.failed_at,
+            "last_error": inspection.last_error,
             "script_path": str(inspection.script_path) if inspection.script_path else None,
             "final_video_path": str(inspection.final_video_path) if inspection.final_video_path else None,
             "artifact_counts": inspection.artifact_counts,

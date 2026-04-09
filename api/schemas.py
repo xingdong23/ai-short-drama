@@ -86,9 +86,16 @@ class PipelineResultPayload(BaseModel):
 
 class PipelineRunStatusPayload(BaseModel):
     output_dir: Path
+    status: str
     current_step: str
     completed_steps: list[str]
     progress_percent: int
+    theme: str | None
+    started_at: str | None
+    updated_at: str | None
+    completed_at: str | None
+    failed_at: str | None
+    last_error: str | None
     script_path: Path | None
     final_video_path: Path | None
     manifest_path: Path | None

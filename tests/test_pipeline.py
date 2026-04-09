@@ -28,8 +28,13 @@ def test_pipeline_run_creates_expected_artifacts(tmp_path: Path) -> None:
     assert state["current_step"] == "complete"
 
     manifest = json.loads((output_dir / "manifest.json").read_text())
+    assert manifest["status"] == "completed"
     assert manifest["current_step"] == "complete"
     assert manifest["progress_percent"] == 100
+    assert manifest["started_at"] is not None
+    assert manifest["completed_at"] is not None
+    assert manifest["failed_at"] is None
+    assert manifest["last_error"] is None
     assert manifest["final_video_path"] == str(output_dir / "final.mp4")
     assert manifest["artifact_counts"]["clips"] >= 1
 
@@ -118,9 +123,46 @@ def test_pipeline_inspect_reports_partial_progress(tmp_path: Path) -> None:
 
     inspection = PipelineEngine().inspect(output_dir)
 
+    assert inspection.status in {"pending", "running"}
     assert inspection.current_step == "video"
     assert inspection.completed_steps == ["script", "character"]
     assert inspection.progress_percent == 40
     assert inspection.script_path == output_dir / "script.json"
     assert inspection.final_video_path is None
     assert inspection.artifact_counts["references"] == 1
+
+
+def test_pipeline_records_failed_run_state(tmp_path: Path, monkeypatch) -> None:
+    output_dir = tmp_path / "failed_case"
+    engine = PipelineEngine()
+
+    def raise_reference_failure(*args, **kwargs):
+        raise RuntimeError("reference generation exploded")
+
+    monkeypatch.setattr(
+        engine.reference_generator,
+        "generate_references",
+        raise_reference_failure,
+    )
+
+    try:
+        engine.run(PipelineRequest(theme="failure case", output_dir=output_dir))
+    except RuntimeError as exc:
+        assert str(exc) == "reference generation exploded"
+    else:
+        raise AssertionError("Pipeline run should have failed")
+
+    state = json.loads((output_dir / "state.json").read_text())
+    assert state["status"] == "failed"
+    assert state["current_step"] == "character"
+    assert state["completed"] == ["script"]
+    assert state["started_at"] is not None
+    assert state["failed_at"] is not None
+    assert state["last_error"] == "reference generation exploded"
+
+    manifest = json.loads((output_dir / "manifest.json").read_text())
+    assert manifest["status"] == "failed"
+    assert manifest["current_step"] == "character"
+    assert manifest["progress_percent"] == 20
+    assert manifest["last_error"] == "reference generation exploded"
+    assert manifest["final_video_path"] is None

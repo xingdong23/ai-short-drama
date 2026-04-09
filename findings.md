@@ -74,6 +74,19 @@
   - `manifest_path`
   - `artifact_counts`
 
+## Delivered Run Lifecycle Tracking
+
+- `src/pipeline/state.py` now stores:
+  - `status`
+  - `started_at`
+  - `updated_at`
+  - `completed_at`
+  - `failed_at`
+  - `last_error`
+  - `theme`
+- The pipeline marks each step as `running` before work starts.
+- On exceptions, the pipeline now persists failed state and rewrites `manifest.json` before raising the error.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -108,3 +121,12 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 46 source files`
 - `python3 -m src.pipeline.engine --input 'status manifest smoke' --output ./output/status-manifest-run` -> `output/status-manifest-run/final.mp4`
 - FastAPI TestClient smoke for `/api/v1/pipeline/status?output_dir=...` -> `200`, `manifest_path` exists, `progress_percent` is `100`
+
+## Lifecycle Verification Evidence
+
+- `pytest -q tests/test_pipeline.py tests/test_api.py` -> `6 passed`
+- `pytest -q` -> `16 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 46 source files`
+- `python3 -m src.pipeline.engine --input 'failure-state smoke' --output ./output/failure-state-run` -> `output/failure-state-run/final.mp4`
+- FastAPI TestClient smoke for `/api/v1/pipeline/status?output_dir=...` -> `200`, `status=completed`, timestamps present, `manifest_path` exists

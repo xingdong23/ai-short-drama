@@ -39,6 +39,11 @@ def test_pipeline_run_endpoint_executes_pipeline(tmp_path: Path) -> None:
     assert status_response.status_code == 200
     status_payload = status_response.json()
     assert status_payload["success"] is True
+    assert status_payload["data"]["run"]["status"] == "completed"
     assert status_payload["data"]["run"]["current_step"] == "complete"
     assert status_payload["data"]["run"]["progress_percent"] == 100
+    assert status_payload["data"]["run"]["started_at"] is not None
+    assert status_payload["data"]["run"]["completed_at"] is not None
+    assert status_payload["data"]["run"]["failed_at"] is None
+    assert status_payload["data"]["run"]["last_error"] is None
     assert Path(status_payload["data"]["run"]["manifest_path"]).exists()
