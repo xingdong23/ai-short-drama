@@ -7,12 +7,16 @@ from api.schemas import (
 )
 from fastapi import APIRouter
 
+from src.config import get_settings
 from src.character.flux_generator import FluxReferenceGenerator
 from src.character.lora_trainer import LoRATrainer
+from src.models.registry import ModelRegistry
 
 
 router = APIRouter(prefix="/character", tags=["character"])
-reference_generator = FluxReferenceGenerator()
+settings = get_settings()
+registry = ModelRegistry.from_yaml(settings.config_dir / "models.yaml")
+reference_generator = FluxReferenceGenerator(registry.get("flux"))
 lora_trainer = LoRATrainer()
 
 

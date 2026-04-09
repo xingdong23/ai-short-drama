@@ -60,7 +60,7 @@ class PipelineEngine:
         self.settings = settings
         self.registry = ModelRegistry.from_yaml(settings.config_dir / "models.yaml")
         self.scriptwriter = ScriptwriterEngine()
-        self.reference_generator = FluxReferenceGenerator()
+        self.reference_generator = FluxReferenceGenerator(self.registry.get("flux"))
         self.router = ShotRouter(self.registry)
         self.wan_engine = WanVideoEngine(self.registry.get("wan21"))
         self.skyreels_engine = SkyReelsVideoEngine()

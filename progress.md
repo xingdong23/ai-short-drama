@@ -27,3 +27,6 @@
 - Added a seventh TDD pass for the Wan adapter layer, covering command backend execution, fallback-on-failure, and hard failure without fallback.
 - Upgraded `WanVideoEngine` from a pure placeholder writer into a config-driven subprocess adapter while preserving deterministic local fallback behavior.
 - Rewired pipeline and video API construction so `wan21` behavior now comes from model registry config.
+- Added an eighth TDD pass for the Flux adapter layer, covering command backend execution, fallback-on-failure, and hard failure without fallback.
+- Upgraded `FluxReferenceGenerator` from a pure placeholder writer into a config-driven subprocess adapter while preserving deterministic local fallback behavior.
+- Rewired pipeline and character API construction so `flux` behavior now comes from model registry config.
