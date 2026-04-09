@@ -87,6 +87,22 @@
 - The pipeline marks each step as `running` before work starts.
 - On exceptions, the pipeline now persists failed state and rewrites `manifest.json` before raising the error.
 
+## Delivered Binary Resolution And Preflight
+
+- Added `src/utils/binaries.py` with the intended resolution chain:
+  - explicit settings path
+  - environment variable
+  - `PATH` lookup via `shutil.which()`
+- Added `AISD_FFMPEG_PATH` and `AISD_FFPROBE_PATH` support through `src/config.py`.
+- `src/compose/ffmpeg_composer.py` now uses the shared binary resolver and records resolved paths in placeholder output.
+- Added `src/pipeline/preflight.py` and `GET /api/v1/pipeline/preflight` to report:
+  - `pipeline_config`
+  - `models_config`
+  - `characters_config`
+  - `ffmpeg`
+  - `ffprobe`
+  - `placeholder_mode`
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -130,3 +146,12 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 46 source files`
 - `python3 -m src.pipeline.engine --input 'failure-state smoke' --output ./output/failure-state-run` -> `output/failure-state-run/final.mp4`
 - FastAPI TestClient smoke for `/api/v1/pipeline/status?output_dir=...` -> `200`, `status=completed`, timestamps present, `manifest_path` exists
+
+## Preflight Verification Evidence
+
+- `pytest -q tests/test_binaries.py tests/test_api.py::test_pipeline_preflight_endpoint_returns_check_summary` -> `5 passed`
+- `pytest -q` -> `21 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 50 source files`
+- `python3 -m src.pipeline.engine --input 'preflight smoke' --output ./output/preflight-run` -> `output/preflight-run/final.mp4`
+- FastAPI TestClient smoke for `/api/v1/pipeline/preflight` -> `200`, `placeholder_mode=True`, expected check keys present

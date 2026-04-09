@@ -109,6 +109,18 @@ class PipelineStatusPayload(BaseModel):
     run: PipelineRunStatusPayload | None = None
 
 
+class PreflightCheckPayload(BaseModel):
+    status: str
+    detail: str
+    path: Path | None = None
+    source: str | None = None
+
+
+class PipelinePreflightPayload(BaseModel):
+    placeholder_mode: bool
+    checks: dict[str, PreflightCheckPayload]
+
+
 class ScriptGenerateRequest(BaseModel):
     theme: str = Field(min_length=1)
     output_dir: Path | None = None

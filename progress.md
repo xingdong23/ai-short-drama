@@ -21,3 +21,6 @@
 - Added a fifth TDD pass for lifecycle tracking, covering successful timestamps and failed-run state persistence.
 - Expanded `PipelineState` and inspection payloads with status, theme, timestamps, and last error fields.
 - Wrapped pipeline execution so failed steps now write durable state before the exception propagates.
+- Added a sixth TDD pass for binary resolution and environment preflight.
+- Implemented shared `explicit > env > PATH` binary lookup, wired it into the FFmpeg composer, and exposed a pipeline preflight API.
+- Verified the preflight path with 21 passing tests plus fresh lint, typecheck, compile, CLI smoke, and API smoke.

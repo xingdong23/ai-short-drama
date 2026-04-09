@@ -2,19 +2,24 @@ from pathlib import Path
 
 from api.schemas import (
     APIResponse,
+    PipelinePreflightPayload,
     PipelineResultPayload,
     PipelineRunStatusPayload,
     PipelineResumeRequest,
     PipelineRunRequest,
     PipelineStatusPayload,
+    PreflightCheckPayload,
 )
 from fastapi import APIRouter
 
 from src.pipeline.engine import PIPELINE_STEPS, PipelineEngine, PipelineRequest
+from src.pipeline.preflight import PreflightChecker
+from src.config import get_settings
 
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 engine = PipelineEngine()
+preflight_checker = PreflightChecker(get_settings())
 
 
 @router.get("/status", response_model=APIResponse[PipelineStatusPayload])
@@ -78,5 +83,25 @@ def resume_pipeline(payload: PipelineResumeRequest) -> APIResponse[PipelineResul
             output_dir=result.output_dir,
             final_video_path=result.final_video_path,
             completed_steps=result.completed_steps,
+        ),
+    )
+
+
+@router.get("/preflight", response_model=APIResponse[PipelinePreflightPayload])
+def preflight() -> APIResponse[PipelinePreflightPayload]:
+    report = preflight_checker.run()
+    return APIResponse(
+        success=True,
+        data=PipelinePreflightPayload(
+            placeholder_mode=report.placeholder_mode,
+            checks={
+                name: PreflightCheckPayload(
+                    status=check.status,
+                    detail=check.detail,
+                    path=check.path,
+                    source=check.source,
+                )
+                for name, check in report.checks.items()
+            },
         ),
     )

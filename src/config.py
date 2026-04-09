@@ -9,6 +9,8 @@ class AppSettings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     config_dir: Path = Path("config")
     output_dir: Path = Path("output")
+    ffmpeg_path: Path | None = None
+    ffprobe_path: Path | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

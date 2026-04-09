@@ -18,6 +18,18 @@ def test_pipeline_status_endpoint_returns_success() -> None:
     assert payload["data"]["run"] is None
 
 
+def test_pipeline_preflight_endpoint_returns_check_summary() -> None:
+    response = client.get("/api/v1/pipeline/preflight")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["data"]["checks"]["models_config"]["status"] in {"ok", "missing"}
+    assert payload["data"]["checks"]["ffmpeg"]["status"] in {"ok", "missing"}
+    assert payload["data"]["checks"]["ffprobe"]["status"] in {"ok", "missing"}
+    assert isinstance(payload["data"]["placeholder_mode"], bool)
+
+
 def test_pipeline_run_endpoint_executes_pipeline(tmp_path: Path) -> None:
     response = client.post(
         "/api/v1/pipeline/run",
