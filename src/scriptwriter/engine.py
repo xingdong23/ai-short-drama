@@ -1,12 +1,45 @@
 import argparse
 import json
+import logging
+import re
+from typing import Protocol
 
+from src.scriptwriter.llm_client import OpenAICompatibleLLMClient
 from src.scriptwriter.storyboard import Script, Shot
 
 
+logger = logging.getLogger(__name__)
+
+
+class ScriptGenerationClient(Protocol):
+    def generate_script(self, theme: str) -> str: ...
+
+
 class ScriptwriterEngine:
+    def __init__(self, llm_client: ScriptGenerationClient | None = None) -> None:
+        self.llm_client = llm_client or OpenAICompatibleLLMClient.from_env()
+
     def generate(self, theme: str) -> Script:
         clean_theme = theme.strip() or "untitled story"
+        llm_script = self._try_generate_from_llm(clean_theme)
+        if llm_script is not None:
+            return llm_script
+
+        return self._generate_placeholder_script(clean_theme)
+
+    def _try_generate_from_llm(self, theme: str) -> Script | None:
+        if self.llm_client is None:
+            return None
+
+        try:
+            raw_response = self.llm_client.generate_script(theme)
+            payload = json.loads(self._strip_markdown_fences(raw_response))
+            return Script.from_dict(payload)
+        except Exception as exc:
+            logger.warning("LLM script generation failed; falling back to placeholder script: %s", exc)
+            return None
+
+    def _generate_placeholder_script(self, clean_theme: str) -> Script:
         title = f"Episode 1: {clean_theme.title()}"
         scenes = [
             Shot(
@@ -38,6 +71,14 @@ class ScriptwriterEngine:
             ),
         ]
         return Script(title=title, theme=clean_theme, scenes=scenes)
+
+    def _strip_markdown_fences(self, text: str) -> str:
+        stripped = text.strip()
+        if not stripped.startswith("```"):
+            return stripped
+        stripped = re.sub(r"^```(?:json)?\s*", "", stripped)
+        stripped = re.sub(r"\s*```$", "", stripped)
+        return stripped.strip()
 
 
 def main() -> int:

@@ -2,10 +2,13 @@
 
 ## Repository State
 
-- The working directory is not initialized as a git repository.
-- The repository currently contains only one file:
-  - `docs/superpowers/specs/2026-04-08-ai-short-drama-design.md`
-- There is no `.omx/` runtime state, no source tree, no config files, and no tests.
+- The working directory is now a git repository and tracks `origin/main`.
+- The repository contains a runnable Phase 1 scaffold:
+  - source tree under `src/`
+  - FastAPI app under `api/`
+  - config files under `config/`
+  - tests under `tests/`
+- There is still no `.omx/` runtime state in the repository.
 
 ## Design Constraints Pulled Forward
 
@@ -48,6 +51,16 @@
 - `POST /api/v1/voice/synthesize` now creates audio and lip-synced clip artifacts
 - `POST /api/v1/compose/final` now creates subtitle, BGM, and final composition artifacts
 
+## Delivered Script LLM Path
+
+- `src/scriptwriter/engine.py` now supports an injected or environment-backed LLM client.
+- `src/scriptwriter/llm_client.py` implements a no-SDK OpenAI-compatible `/chat/completions` client.
+- If `LLM_API_BASE`, `LLM_API_KEY`, or `LLM_API_MODEL` are missing, or if the live request/parse fails, the engine falls back to the deterministic placeholder script.
+
+## Delivered CI Prerequisite
+
+- Added `environment.yml` so the existing GitHub Actions conda workflow has an environment file to consume.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -64,3 +77,12 @@
 - `pytest -q tests/test_stage_api.py` -> `6 passed`
 - `pytest -q` -> `11 passed`
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 44 source files`
+
+## Latest Verification Evidence
+
+- `pytest -q tests/test_scriptwriter.py` -> `3 passed`
+- `pytest -q` -> `14 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 46 source files`
+- `python3 -m src.pipeline.engine --input 'llm fallback smoke' --output ./output/llm-fallback-run` -> `output/llm-fallback-run/final.mp4`
+- `python3` YAML parse check for `environment.yml` -> loaded successfully with `flake8` present

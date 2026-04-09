@@ -12,3 +12,6 @@
 - Added a second TDD pass for stage-level APIs and wrote failing tests for script, character, video, voice, and compose endpoints.
 - Replaced placeholder stage responses with concrete request/response schemas and deterministic artifact generation.
 - Verified the expanded API surface with 11 passing tests plus fresh lint and type checks.
+- Added a third TDD pass for `scriptwriter`, covering valid LLM JSON, fenced JSON, and failure fallback behavior.
+- Implemented a no-SDK OpenAI-compatible chat-completions client and wired `ScriptwriterEngine` to use it opportunistically.
+- Added `environment.yml` to satisfy the existing conda GitHub Actions workflow.
