@@ -37,3 +37,5 @@
 - Added shared wrapper-side command rendering/execution and environment-documented delegate hooks: `AISD_FLUX_DELEGATE_CMD` and `AISD_WAN_DELEGATE_CMD`.
 - Added a tenth TDD pass for the voice chain, covering command backend execution for `CosyVoice` and `MuseTalk`, repo-local voice wrappers, and voice stage API output markers.
 - Upgraded the default voice path so TTS and lip sync now flow through registry-driven command adapters and repo-local wrapper scripts instead of direct placeholder writers.
+- Added an eleventh TDD pass for voice-wrapper delegation, covering `AISD_COSYVOICE_DELEGATE_CMD` and `AISD_MUSETALK_DELEGATE_CMD`.
+- Extended the shared wrapper templating contract so all four repo-local wrappers can proxy to real external commands through the same mechanism.

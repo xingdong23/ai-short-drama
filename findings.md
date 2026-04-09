@@ -166,6 +166,18 @@
 - `config/models.yaml` now routes default `cosyvoice` and `musetalk` entries through those wrapper scripts.
 - `src/pipeline/engine.py` and [api/routers/voice.py](/Users/chengzheng/workspace/chuangxin/ai-short-drama/api/routers/voice.py) now construct both voice engines from the model registry, so the default pipeline path exercises the command-adapter model end to end.
 
+## Delivered Voice Wrapper Delegation Layer
+
+- `scripts/run_cosyvoice_backend.py` now checks `AISD_COSYVOICE_DELEGATE_CMD` before writing deterministic placeholder output.
+- `scripts/run_musetalk_backend.py` now checks `AISD_MUSETALK_DELEGATE_CMD` before writing deterministic placeholder output.
+- `scripts/backend_wrapper_common.py` now exposes stable voice-oriented template fields in addition to the visual ones:
+  - `{shot_id}`
+  - `{dialogue}`
+  - `{character}`
+  - `{source_clip_path}`
+  - `{audio_path}`
+- This keeps the wrapper contract uniform across `Flux`, `Wan`, `CosyVoice`, and `MuseTalk`.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -265,3 +277,12 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 59 source files`
 - `python3 -m compileall src api scripts tests` -> success
 - `python3 -m src.pipeline.engine --input 'voice adapter smoke' --output ./output/voice-adapter-run` -> `output/voice-adapter-run/final.mp4`
+
+## Voice Wrapper Delegation Verification Evidence
+
+- `pytest -q tests/test_backend_scripts.py` -> `8 passed`
+- `pytest -q` -> `39 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 59 source files`
+- `python3 -m compileall src api scripts tests` -> success
+- `python3 -m src.pipeline.engine --input 'voice wrapper delegate smoke' --output ./output/voice-wrapper-delegate-run` -> `output/voice-wrapper-delegate-run/final.mp4`

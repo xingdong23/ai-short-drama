@@ -12,7 +12,12 @@ def build_template_fields(output_path: Path, **extra: str) -> dict[str, str]:
     fields = {
         "output_path": str(output_path),
         "prompt": os.getenv("AISD_SHOT_PROMPT", ""),
+        "shot_id": os.getenv("AISD_SHOT_ID", ""),
+        "dialogue": os.getenv("AISD_SHOT_DIALOGUE", ""),
+        "character": os.getenv("AISD_CHARACTER", ""),
         "reference_path": os.getenv("AISD_REFERENCE_PATH", ""),
+        "source_clip_path": os.getenv("AISD_SOURCE_CLIP_PATH", ""),
+        "audio_path": os.getenv("AISD_AUDIO_PATH", ""),
         "model_id": os.getenv("AISD_MODEL_ID", ""),
         "python_executable": sys.executable,
         "project_root": str(PROJECT_ROOT),
