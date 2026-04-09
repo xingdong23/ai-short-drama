@@ -1,0 +1,5 @@
+pipeline:
+  default_output_root: "output"
+  default_episode_duration_seconds: 45
+  subtitle_format: "srt"
+  placeholder_mode: true

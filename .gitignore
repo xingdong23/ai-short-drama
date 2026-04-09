@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+output/
+assets/characters/
+assets/bgm/
+assets/voices/
+assets/lora/

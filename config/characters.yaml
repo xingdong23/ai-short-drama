@@ -1,0 +1,9 @@
+characters:
+  - name: "xiaomei"
+    display_name: "Xiaomei"
+    voice: "cosyvoice-default-female"
+    lora_path: "assets/lora/xiaomei.safetensors"
+  - name: "boyfriend"
+    display_name: "Boyfriend"
+    voice: "cosyvoice-default-male"
+    lora_path: "assets/lora/boyfriend.safetensors"

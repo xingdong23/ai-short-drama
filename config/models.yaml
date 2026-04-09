@@ -1,0 +1,45 @@
+models:
+  flux:
+    type: image_generation
+    model_id: "black-forest-labs/FLUX.1-dev"
+    vram_mb: 12000
+    lora_support: true
+
+  skyreels_13b:
+    type: video_generation
+    model_id: "Skywork/SkyReels-V2-I2V-1.3B-540P-Diffusers"
+    vram_mb: 15000
+    t2v_model: "Skywork/SkyReels-V2-T2V-1.3B-540P-Diffusers"
+    df_model: "Skywork/SkyReels-V2-DF-1.3B-540P-Diffusers"
+    flf2v: true
+    video_extension: true
+    lora_support: true
+    resolution: "540P"
+
+  wan21:
+    type: video_generation
+    model_id: "Wan-AI/Wan2.1-I2V-14B-480P"
+    vram_mb: 20000
+    t2v_model: "Wan-AI/Wan2.1-T2V-14B-480P"
+
+  cosyvoice:
+    type: tts
+    model_id: "FunAudioLLM/CosyVoice2-0.5B"
+    vram_mb: 2000
+
+  musetalk:
+    type: lip_sync
+    model_id: "musetalk-v1.5"
+    vram_mb: 4000
+
+  whisper:
+    type: transcription
+    model_id: "large-v3"
+    vram_mb: 3000
+
+  llm:
+    type: text_generation
+    model_id: "llm-api"
+    vram_mb: 0
+    api_base: "${LLM_API_BASE}"
+    api_key: "${LLM_API_KEY}"
