@@ -24,6 +24,7 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | Add manifest persistence and real pipeline status inspection | complete | Pipeline now writes `manifest.json`, exposes `inspect()`, and returns run progress via `/api/v1/pipeline/status?output_dir=...` |
 | Record timestamps and failure state for pipeline runs | complete | State and manifest now capture `running/completed/failed` lifecycle, timestamps, and last error text |
 | Add binary resolution chain and pipeline preflight checks | complete | Added `explicit > env > PATH` binary resolution and `/api/v1/pipeline/preflight` environment checks |
+| Upgrade Wan video engine into a configurable command adapter | complete | `WanVideoEngine` now supports command-based external backends, placeholder fallback, and config-driven injection from `wan21` model spec |
 
 ## Constraints
 
@@ -51,3 +52,4 @@ Turn the current design-only repository into a runnable Phase 1 scaffold for the
 | Pipeline status API had no runtime inspection payload | 1 | Added `PipelineInspection`, manifest writes, and optional `run` payload on the status endpoint |
 | Pipeline runs had no durable failure metadata | 1 | Expanded `PipelineState` with lifecycle fields and wrapped execution to persist failed state before re-raising |
 | No shared binary resolution logic existed for FFmpeg/ffprobe or environment preflight | 1 | Added reusable binary resolver, preflight checker, config fields, and API exposure |
+| `WanVideoEngine` could not execute an external backend or honor model config | 1 | Added command backend parsing from model extras, subprocess invocation, fallback handling, and pipeline/API wiring |

@@ -103,6 +103,18 @@
   - `ffprobe`
   - `placeholder_mode`
 
+## Delivered Wan Adapter Layer
+
+- `src/video/wan_engine.py` now accepts an optional `ModelSpec`.
+- If `wan21` is configured with `backend.type=command`, the engine will:
+  - render command argv from template fields
+  - inject shot context via environment variables
+  - execute the external backend via `subprocess.run`
+  - require the backend to create the expected output file
+- If command execution fails and `fallback_to_placeholder=true`, the engine writes a deterministic fallback artifact with command diagnostics.
+- `src/pipeline/engine.py` and `api/routers/video.py` now construct `WanVideoEngine` from the `wan21` registry spec.
+- `config/models.yaml` now makes the placeholder backend explicit for `wan21`.
+
 ## Verification Evidence
 
 - `pytest -q` -> `5 passed`
@@ -155,3 +167,12 @@
 - `python3 -m mypy src api scripts tests` -> `Success: no issues found in 50 source files`
 - `python3 -m src.pipeline.engine --input 'preflight smoke' --output ./output/preflight-run` -> `output/preflight-run/final.mp4`
 - FastAPI TestClient smoke for `/api/v1/pipeline/preflight` -> `200`, `placeholder_mode=True`, expected check keys present
+
+## Wan Adapter Verification Evidence
+
+- `pytest -q tests/test_video_engine.py` -> `3 passed`
+- `pytest -q` -> `24 passed`
+- `python3 -m ruff check .` -> `All checks passed!`
+- `python3 -m mypy src api scripts tests` -> `Success: no issues found in 51 source files`
+- `python3 -m src.pipeline.engine --input 'wan adapter smoke' --output ./output/wan-adapter-run` -> `output/wan-adapter-run/final.mp4`
+- FastAPI TestClient smoke for `/api/v1/video/generate` -> `200`, generated clip contains `backend=placeholder` under default config

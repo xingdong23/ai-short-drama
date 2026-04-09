@@ -12,7 +12,7 @@ router = APIRouter(prefix="/video", tags=["video"])
 settings = get_settings()
 registry = ModelRegistry.from_yaml(settings.config_dir / "models.yaml")
 router_engine = ShotRouter(registry)
-wan_engine = WanVideoEngine()
+wan_engine = WanVideoEngine(registry.get("wan21"))
 skyreels_engine = SkyReelsVideoEngine()
 
 

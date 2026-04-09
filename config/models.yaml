@@ -21,6 +21,9 @@ models:
     model_id: "Wan-AI/Wan2.1-I2V-14B-480P"
     vram_mb: 20000
     t2v_model: "Wan-AI/Wan2.1-T2V-14B-480P"
+    backend:
+      type: "placeholder"
+      fallback_to_placeholder: true
 
   cosyvoice:
     type: tts

@@ -62,7 +62,7 @@ class PipelineEngine:
         self.scriptwriter = ScriptwriterEngine()
         self.reference_generator = FluxReferenceGenerator()
         self.router = ShotRouter(self.registry)
-        self.wan_engine = WanVideoEngine()
+        self.wan_engine = WanVideoEngine(self.registry.get("wan21"))
         self.skyreels_engine = SkyReelsVideoEngine()
         self.tts_engine = CosyVoiceEngine()
         self.lip_sync_engine = MuseTalkEngine()

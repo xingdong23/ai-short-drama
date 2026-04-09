@@ -24,3 +24,6 @@
 - Added a sixth TDD pass for binary resolution and environment preflight.
 - Implemented shared `explicit > env > PATH` binary lookup, wired it into the FFmpeg composer, and exposed a pipeline preflight API.
 - Verified the preflight path with 21 passing tests plus fresh lint, typecheck, compile, CLI smoke, and API smoke.
+- Added a seventh TDD pass for the Wan adapter layer, covering command backend execution, fallback-on-failure, and hard failure without fallback.
+- Upgraded `WanVideoEngine` from a pure placeholder writer into a config-driven subprocess adapter while preserving deterministic local fallback behavior.
+- Rewired pipeline and video API construction so `wan21` behavior now comes from model registry config.
